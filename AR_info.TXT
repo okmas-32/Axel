@@ -1,0 +1,9 @@
+arduino je použité ako ovládač hardwaru... to jesť samotné servá na ruke (Axelovy) alebo aj vedľajšie servá je možné pridať ak potrebné
+
+-USB baud rate by malo dokázať zvládnuť prijímať okolo 300 príkazov na pohyb
+
+v programe som nikde nepoužil delay() dôvod:	-zastavý to celé arduino na dobu ktorý mu dám
+						-radšej som si spravil vlastnú funkciu ckaj()
+
+
+!!!Arduino nano používa ATmega328P (old bootloader)

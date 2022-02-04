@@ -1,0 +1,37 @@
+name:	pi
+psw:	Axel159
+
+ssh: notepad ./.ssh/id_rsa.pub
+
+
+
+
+treba pingnuť raspberrypi.local a potom sa zobrazý... neviem zatiaľ prečo to tak je ale je to tak
+
+postup:
+	zmena hesla:
+	užívateľ - pi
+	heslo - Axel159
+
+	nainštalovanie:
+		pythonu 3.9.5:
+			https://itheo.tech/install-python-39-on-raspberry-pi
+
+		mounting USB:
+			https://raspberrytips.com/mount-usb-drive-raspberry-pi/
+
+		pip3.9:
+			popen
+			serial
+			pyserial (kvôli serial.tools.list_ports ale to nefungovalo na raspberry tak som nakoniec použil popen)
+
+-note: musel som spraviť work around lebo žiadna knižnica mi nevypíše výrobcu každého USB pripojeného zariadenia tak som spravil to že napíšem každému zariadeniu a to ktoré správne odpovie naspäť bude brané ako Arduino
+
+	wireless access point (wireless controll):
+		https://www.raspberryconnect.com/projects/65-raspberrypi-hotspot-accesspoints/158-raspberry-pi-auto-wifi-hotspot-switch-direct-connection
+		-ssid: AXEL_WiFi (2)
+		-pass: ScDmTBCIO
+
+	joistick:
+		https://iot-guider.com/raspberrypi/analog-joystick-module-in-raspberry-pi/attachment/interfacing-analog-joystick-module-in-raspberry-pi/
+
