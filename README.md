@@ -15,4 +15,5 @@ we are using:
 how i set up Raspberry pi and its hotspot in RP_info.txt
 
 how [`Angie`](/3D_models/Angie.jpg) looks like :raised_hand_with_fingers_splayed:
-how [`Bimbis`](/3D_models/Angie.jpg) looks like :mechanical_arm:
+
+how [`Bimbis`](/3D_models/Bimbis.jpg) looks like :mechanical_arm:
