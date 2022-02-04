@@ -31,15 +31,25 @@ class Axel():
         self.u2 = 45
         self.u3 = 45
         self.u4 = 0
-        self.ser = ''
+
+        #ports in serial
         self.A = serial.Serial()
         self.B = serial.Serial()
         self.joy = serial.Serial()
+
+        #ports in string
         self.Aport = ""
         self.Bport = ""
         self.joyPort = ""
+
+        #parameters in dictionary
+        self.AParametre = {}
+        self.BParametre = {}
+        self.joyParametre = {}
+
+        #baud rate for all Arduinos
         self.baud_rate = baud_rate
-        self.parametre = '' #TODO dorobiť dostávanie parametrov z arduina na výpočet
+
         self.X = 90
         self.Y = 90
         self.Z = 0
@@ -170,19 +180,32 @@ class Axel():
         self.joy.close()
 
     def readJOY(self):
-        if self.rjoy is None:
-            self.joy.write(('1' + '\r\n').encode(locale.getpreferredencoding().rstrip()))
-        c = self.joy.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
-        print(c)
-        if debug[0]:print(c)
-        if self.rjoy != c:
-            if self.rjoy is None:
-                self.rjoy = c
-                return
-            self.rjoy = c
-            x = c.split(',')
-            print(x)
-        return
+        # if self.rjoy is None:
+        #     self.joy.write(('1' + '\r\n').encode(locale.getpreferredencoding().rstrip()))
+        # c = self.joy.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
+        # print(c)
+        # if debug[0]:print(c)
+        # if self.rjoy != c:
+        #     if self.rjoy is None:
+        #         self.rjoy = c
+        #         return
+        #     self.rjoy = c
+        #     x = c.split(',')
+        #     print(x)
+        re = p1.stdout.readline().decode().rstrip().split(',')
+        out = {
+                1:{
+                    'X':re[0],
+                    'Y' : re[1],
+                    'SW' : re[2]
+                },
+                2:{
+                    'X':re[3],
+                    'Y' : re[4],
+                    'SW' : re[5]
+                }
+            }
+        return out
 
     def ini(self):
         """funkcia na získanie portov v ktorých je Arduino a získanie dát z Arduina o samotnej ruke
@@ -209,19 +232,34 @@ class Axel():
                     ser.close()
                     self.A.open()
                     self.Aport = portEH[i]
+                    self.AParametre = {
+                        'name': Ax[1],
+                        'base':Ax[2],
+                        'waist':Ax[3],
+                        'arm1':Ax[4],
+                        'arm2':Ax[5],
+                        'hook':Ax[6]
+                    }
                 if Ax[0] == 'Axel' and Ax[1] == 'Bimbis:)':
                     if debug[0]: print(f'{portEH[i]} Bimbis Arduino')
                     self.B = ser
                     ser.close()
                     self.B.open()
                     self.Bport = portEH[i]
+                    self.BParametre = {
+                        'name':Ax[1]
+                    }   #TODO dokončiť inicializaciu Bimbisa
                 if Ax[0] == 'Axel' and Ax[1] == 'joy':
                     if debug[0]: print(f'{portEH[i]} joystick Arduino')
                     ser.close()
                     self.joy = ser
                     # self.joy.open()
                     self.joyPort = portEH[i]
-
+                    self.joyParametre = {
+                        'name':str(Ax[1]),
+                        'max':int(Ax[2]),
+                        'center':int(Ax[2])/2
+                    }
             except:
                 pass
 
@@ -239,30 +277,20 @@ if __name__ == "__main__":
                 print(f'joyAR says: {ar.rjoy}')
 
         while True:
-
-            # ar.joy.write(('1' + '\r\n').encode(locale.getpreferredencoding().rstrip()))
-            # x = ar.joy.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
-            # print(x)
             time.sleep(0.01)
-            # time.sleep(2)
-            # p = list(serial.tools.list_ports.comports())
-            # if p != ports:
-            #     ports = list(serial.tools.list_ports.comports())
-            #     ar.ini()
-            # ar.readJOY()
-            ar.rjoy = p1.stdout.readline().decode().rstrip()
+            # x = ar.readJOY()
 
 
 
     except KeyboardInterrupt:
-        print(f'A arduino: {ar.A}')
-        print(f'b arduino: {ar.B}')
-        print(f'joy arduino: {ar.joy}')
+        # print(f'A arduino: {ar.A}')
+        # print(f'b arduino: {ar.B}')
+        # print(f'joy arduino: {ar.joy}')
         ar.closeSER()
         print(f'\nAxel bol zastavený s commandom Ctrl + C\n')
-        print(f'A arduino: {ar.A}')
-        print(f'b arduino: {ar.B}')
-        print(f'joy arduino: {ar.joy}')
+        # print(f'A arduino: {ar.A}')
+        # print(f'b arduino: {ar.B}')
+        # print(f'joy arduino: {ar.joy}')
         sys.exit(1)
     except Exception as e:
         ar.closeSER()
@@ -270,4 +298,3 @@ if __name__ == "__main__":
     finally:
         ar.closeSER()
         sys.exit(0)
-
