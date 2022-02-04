@@ -1,4 +1,3 @@
-
 postup:
 
 	nainštalovanie:

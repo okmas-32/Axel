@@ -8,7 +8,14 @@ from math import sqrt, atan2, degrees, atan
 
 baud_rate = 115200
 
-debug = [bool(1), "debug: "]
+debug = {
+    '0':bool(1),
+    'math':bool(1),
+    'ini':bool(1),
+    'fromser':bool(1),
+    'text':'\x1b[0;30;41m' + 'debug: ' + '\x1b[0m', #hehe found coloring printout
+    'space':'\x1b[0;30;41m' + 'I ' + '\x1b[0m'
+}
 
 #TODO dorobiť data storage pre každé AR (ukladanie údajov pri inicializácii na neskorší výpočet)
 # https://www.youtube.com/watch?v=WOwi0h_-dfA
@@ -65,14 +72,14 @@ class Axel():
         ArduinoPort=[]
         for p in self.ports:
             port = str(p)
-            if debug[0]:print(port)
+            if debug['0']:print(port)
             portEH=port.split(' ', 1)
             with serial.Serial(portEH[0], self.baud_rate, timeout=2) as ser:
 #TODO https://stackoverflow.com/questions/58268507/how-define-a-serial-port-in-a-class-in-python
 #TODO https://python.hotexamples.com/examples/serial/Serial/write/python-serial-write-method-examples.html
                 x = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
                 Ax = x.split(',')
-                if debug[0]:print(Ax)
+                if debug['0']:print(Ax)
                 if Ax[0] == 'Axel':
                     ArduinoPort.append(portEH[0])
                     ArduinoPort.append(Ax[1])
@@ -106,8 +113,8 @@ class Axel():
                         ArduinoPort.pop(len(ArduinoPort)-1)
                     else:print("Nezadefinovaný ovládač na Axela (alebo poškodenie sériových dát.. v tom prípade reset!")
                 else:
-                    if debug[0]:print(str(portEH[0])+" Neni Arduino")
-            if debug[0]:print('\r')
+                    if debug['0']:print(str(portEH[0])+" Neni Arduino")
+            if debug['0']:print('\r')
         if 2>(len(self.joy) + len(self.B) + len(self.A)):
             print("Nenašiel som žiadne Arduino")
             return
@@ -150,8 +157,9 @@ class Axel():
         else:
             Xb = Xb2
             Yb = Yb2
-        if debug[0]:
-            print(f'{debug[1]}\n\tT= {t}')
+        if debug['math'] and debug['0']:
+            print(debug['text'])
+            print(f'\n\tT= {t}')
             print(f'\ta= {a}')
             print(f'\tb= {b}')
             print(f'\tc= {c}')
@@ -162,13 +170,13 @@ class Axel():
             print(f'\tXb2= {Xb2}')
 
         alfa = degrees(atan2(Yb, Xb))
-        beta = (degrees(atan2(Y - Yb, X - Xb))) - alfa + 180
+        beta =  alfa + 180 - (degrees(atan2(Y - Yb, X - Xb)))
         gama = degrees(atan(Z / X))
 
         if Z<0:
             gama = -gama
 
-        if debug[0]: print(debug[1], str(gama), str(alfa), str(beta))
+        if debug['math']: print(debug['text'], str(gama), str(alfa), str(beta))
         self.u1 = gama
         self.u2 = alfa
         self.u3 = beta
@@ -184,7 +192,7 @@ class Axel():
         #     self.joy.write(('1' + '\r\n').encode(locale.getpreferredencoding().rstrip()))
         # c = self.joy.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
         # print(c)
-        # if debug[0]:print(c)
+        # if debug['0']:print(c)
         # if self.rjoy != c:
         #     if self.rjoy is None:
         #         self.rjoy = c
@@ -215,7 +223,7 @@ class Axel():
             port = str(p)
             p = port.split(' ', 1)
             portEH.append(p[0])
-            if debug[0]:
+            if debug['0']:
                 print(i)
                 print(f'port: {port}')
             try:
@@ -225,9 +233,9 @@ class Axel():
                 ser.open()
                 x = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
                 Ax = x.split(',')
-                if debug[0]: print(Ax)
+                if debug['0']: print(Ax)
                 if Ax[0] == 'Axel' and Ax[1] == 'Angie':
-                    if debug[0]: print(f'{portEH[i]} Angie Arduino')
+                    if debug['0']: print(f'{portEH[i]} Angie Arduino')
                     self.A = ser
                     ser.close()
                     self.A.open()
@@ -241,7 +249,7 @@ class Axel():
                         'hook':Ax[6]
                     }
                 if Ax[0] == 'Axel' and Ax[1] == 'Bimbis:)':
-                    if debug[0]: print(f'{portEH[i]} Bimbis Arduino')
+                    if debug['0']: print(f'{portEH[i]} Bimbis Arduino')
                     self.B = ser
                     ser.close()
                     self.B.open()
@@ -250,7 +258,7 @@ class Axel():
                         'name':Ax[1]
                     }   #TODO dokončiť inicializaciu Bimbisa
                 if Ax[0] == 'Axel' and Ax[1] == 'joy':
-                    if debug[0]: print(f'{portEH[i]} joystick Arduino')
+                    if debug['0']: print(f'{portEH[i]} joystick Arduino')
                     ser.close()
                     self.joy = ser
                     # self.joy.open()
@@ -262,24 +270,36 @@ class Axel():
                     }
             except:
                 pass
+        if not (self.Aport or self.Bport or self.joyPort):
+            raise CustomError("Nenašiel som žiadne porty s Axel doskami")
+
+class CustomError(Exception):
+    def __init__(self, Exception):
+        print('\r' + debug['space'] + str(Exception))
+        pass
 
 if __name__ == "__main__":
     ar = Axel()
+    ports = list(serial.tools.list_ports.comports())
     try:
-        ports = list(serial.tools.list_ports.comports())
-        ar.ini()
-        p1 = subprocess.Popen(['python', './joy_ReadCOM.py', str(ar.joyPort), str(ar.baud_rate)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        while not (ar.Aport or ar.Bport or ar.joyPort):
+            ports = list(serial.tools.list_ports.comports())
+            if not ports:
+                raise CustomError("Nenašiel som žiadne porty na hľadanie")
+                pass
+            ar.ini()
 
-
-        if debug[0]:
+        p1 = subprocess.Popen(['python', './joy_ReadCOM.py', str(ar.joyPort), str(ar.baud_rate)], stdin=subprocess.PIPE,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if debug['0']:
             for _ in range(10):
                 ar.rjoy = p1.stdout.readline().decode().rstrip()
                 print(f'joyAR says: {ar.rjoy}')
 
+        #TODO spraviť na checkovanie či je raspberry ready (minimálne jedna RUKA)
         while True:
             time.sleep(0.01)
             # x = ar.readJOY()
-
 
 
     except KeyboardInterrupt:
@@ -294,7 +314,20 @@ if __name__ == "__main__":
         sys.exit(1)
     except Exception as e:
         ar.closeSER()
-        print(f'\nExeption: {e}')
+        raise CustomError(e)
+        # print(f'\nExeption: ({e})')
     finally:
         ar.closeSER()
+        if debug['0']:
+            print('\r')
+            print(debug['text'])
+            print(debug['space'] + str(ar.A))
+            print(debug['space'] + str(ar.Aport))
+            print(debug['space'] + str(ar.AParametre))
+            print(debug['space'] + str(ar.B))
+            print(debug['space'] + str(ar.Bport))
+            print(debug['space'] + str(ar.BParametre))
+            print(debug['space'] + str(ar.joy))
+            print(debug['space'] + str(ar.joyPort))
+            print(debug['space'] + str(ar.joyParametre))
         sys.exit(0)
