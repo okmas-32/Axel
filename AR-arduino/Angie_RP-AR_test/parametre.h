@@ -7,12 +7,14 @@
 #define space ","
 #define SERIAL_BAUD 115200
 
+// v milimetroch
 #define _base "42"
 #define _waist "69"
 #define _arm1 "143"
 #define _arm2 "96"
-#define _hook "75"
+#define _hook "22"
 
+//keby niekedy potrebujem na dvojitý prepočet v Arduine
 #define i_base 42
 #define i_waist 69
 #define i_arm1 143

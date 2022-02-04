@@ -7,7 +7,7 @@
 #define space ","
 #define SERIAL_BAUD 115200
 
-#define _maxj "1023"
+#define _maxj "1024"
 
 // Joystick 1:
 #define _VRx1 0       // X analogovy Pin 0

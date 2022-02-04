@@ -13,9 +13,10 @@ debug = {
     'math':bool(1),
     'ini':bool(1),
     'fromser':bool(1),
-    'text':'\x1b[1;30;41m' + 'debug: ' + '\x1b[0m', #hehe found coloring printout
-    'space':'\x1b[1;30;41m' + 'I ' + '\x1b[0m',
-    'gtext':'\33[92m' + 'I ' + '\33[0m'
+    'text':'\x1b[1;33;33m' + 'debug:' + '\x1b[0m', #hehe found coloring printout
+    'space':'\x1b[1;33;33m' + 'I ' + '\x1b[0m',
+    'gtext':'\33[92m' + 'I ' + '\33[0m',
+    'Error':'\x1b[1;30;41m' + '\tE ' + '\x1b[0m'
 }
 
 #TODO dorobiť data storage pre každé AR (ukladanie údajov pri inicializácii na neskorší výpočet)
@@ -122,21 +123,35 @@ class Axel():
         print("---------------")
         return
 
-    def mathAX2(self,_X, _Y, _Z, dlzka1, dlzka2, dlzka3):  # TODO niekedy optimalizovať
-        """matika na výpočet uhlov z súradníc pre 2kĺbového robota + výpočet rotácie základne s Z (roboj je v zmysle že je položený a pracovnú plochu má okolo seba)"""
+    def mathAX2(self,_X, _Y, _Z):  # TODO niekedy optimalizovať
+        """matika na výpočet uhlov z súradníc pre 2kĺbového robota + výpočet rotácie základne
+         s Z (roboj je v zmysle že je položený a pracovnú plochu má okolo seba)"""
         X = _X
         Y = _Y
         Z = _Z
 
-        dlzka2 += dlzka3
-
-
+        # dlzka2 += dlzka3
         # X = 12
         # Y = 1.2
         # Z = 5
         # dlzka1 = 14.3
         # dlzka2 = 9.6
 
+        # súradnice ktoré poslalo Arduino pri inicializácii
+        Y -= self.AParametre['base'] + self.AParametre['waist']
+        dlzka1 = self.AParametre['arm1']
+        dlzka2 = self.AParametre['arm2'] + self.AParametre['hook']
+
+        # skontrolovanie či sú všetky súradnice v dosahu ak nie tak ich prepíše na najbližšie v dosahu
+        #TODO spraiviť dosah automaticky vypočítaný nie manuálne napísaný
+        if X < 80:
+            X = 80
+        if Y < 1:
+            Y = 1
+        if Z < 80:
+            Z = 80
+
+        # main math
         t = dlzka2 ** 2 - dlzka1 ** 2 - X ** 2 - Y ** 2
 
         a = 4 * (X ** 2 + Y ** 2)
@@ -144,7 +159,6 @@ class Axel():
         c = t ** 2 - 4 * dlzka1 ** 2 * X ** 2
 
         D = b ** 2 - 4 * a * c
-        print(D)
 
         Yb1 = (((-b) + sqrt(abs(D))) / (2 * a))
         Yb2 = (((-b) - sqrt(abs(D))) / (2 * a))
@@ -158,37 +172,56 @@ class Axel():
         else:
             Xb = Xb2
             Yb = Yb2
+
+
+        # debug stuff
         if debug['math'] and debug['0']:
             print(debug['text'])
+            print(f'\tX= {X}')
+            print(f'\tY= {Y}')
+            print(f'\tZ= {Z}')
+            print(f'\tdlzka1= {dlzka1}')
+            print(f'\tdlzka2= {dlzka2}')
             print(f'\n\tT= {t}')
             print(f'\ta= {a}')
             print(f'\tb= {b}')
             print(f'\tc= {c}')
             print(f'\tD= {D}')
-            print(f'\tYb1= {Yb1}')
-            print(f'\tYb2= {Yb2}')
-            print(f'\tXb1= {Xb1}')
-            print(f'\tXb2= {Xb2}')
+            print(f'\t\tYb1= {Yb1}')
+            print(f'\t\tYb2= {Yb2}')
+            print(f'\t\tXb1= {Xb1}')
+            print(f'\t\tXb2= {Xb2}\r')
+            print(f'\tXb= {Xb}')
+            print(f'\tYb= {Yb}')
 
+        # finnal math
         alfa = degrees(atan2(Yb, Xb))
-        beta =  alfa + 180 - (degrees(atan2(Y - Yb, X - Xb)))
+        beta_ = degrees(atan2(Y - Yb, X - Xb))  #nemam tucha prečo ale musí to byť takto s beta_ lebo inak to dáva iné divné čísla
+        beta =  beta_ - alfa + 180
         gama = degrees(atan(Z / X))
 
+        # kontrolovanie či Z súradnica je v negative ak tak sa prehodí aj uhol lebo matika je spravená aby počítala iba s kladným Z
         if Z<0:
             gama = -gama
 
         if debug['math']: print(debug['text'], str(gama), str(alfa), str(beta))
+
+        # ukladanie uhlov
         self.u1 = gama
         self.u2 = alfa
         self.u3 = beta
         # -3689,7823,14682,25,90'
 
     def cloSER(self):
+        '''funkcia na uzatvaranie seriovích komunikácii... ano viem mohol som použiť build in funkcie
+        __enter__ a __exit__ ale bolo málo času'''
         self.A.close()
         self.B.close()
         self.joy.close()
 
     def readJOY(self):
+        ''' tato funkcia je čisto na čítanie z joystick Arduina'''
+
         # if self.rjoy is None:
         #     self.joy.write(('1' + '\r\n').encode(locale.getpreferredencoding().rstrip()))
         # c = self.joy.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
@@ -202,6 +235,10 @@ class Axel():
         #     x = c.split(',')
         #     print(x)
         re = p1.stdout.readline().decode().rstrip().split(',')
+        re[0] = int(re[0]) - self.joyParametre['center']
+        re[1] = int(re[1]) - self.joyParametre['center']
+        re[3] = int(re[3]) - self.joyParametre['center']
+        re[4] = int(re[4]) - self.joyParametre['center']
         out = {
                 1:{
                     'X':re[0],
@@ -241,12 +278,12 @@ class Axel():
                     self.A.open()
                     self.Aport = portEH[i]
                     self.AParametre = {
-                        'name': Ax[1],
-                        'base':Ax[2],
-                        'waist':Ax[3],
-                        'arm1':Ax[4],
-                        'arm2':Ax[5],
-                        'hook':Ax[6]
+                        'name': str(Ax[1]),
+                        'base': int(Ax[2]),
+                        'waist':int(Ax[3]),
+                        'arm1': int(Ax[4]),
+                        'arm2': int(Ax[5]),
+                        'hook': int(Ax[6])
                     }
                 if Ax[0] == 'Axel' and Ax[1] == 'Bimbis:)':
                     if debug['0']: print(debug['gtext'] + '\33[5m'+ str(portEH[i])+ '\33[0m' +f' Bimbis Arduino') #skúšal som či sa nedá blikať s stringom ale očividne nie
@@ -255,7 +292,7 @@ class Axel():
                     self.B.open()
                     self.Bport = portEH[i]
                     self.BParametre = {
-                        'name':Ax[1]
+                        'name':str(Ax[1])
                     }   #TODO dokončiť inicializaciu Bimbisa
                 if Ax[0] == 'Axel' and Ax[1] == 'joy':
                     if debug['0']: print(debug['gtext'] + f'{portEH[i]} joystick Arduino')
@@ -276,39 +313,53 @@ class Axel():
             return
 
 class CustomError(Exception):
-    def __init__(self, Exception):
-        print('\r' + debug['space'] + str(Exception))
+    """my custom 'error handlerer' mainly due to coloring outpud/debug stuff but also it was funn tu setup"""
+    def __init__(self, Exception, i = None):
+        if i != None:
+            print('\r' + debug['space'] + str(Exception))
+        else:
+            print('\r' + debug['space'] + debug['Error'] + str(Exception))
         pass
 
 if __name__ == "__main__":
     ar = Axel()
     portsini = list(serial.tools.list_ports.comports())
     try:
+        # will make first inicialization of its environment
         ar.ini(portsini)
+
+        # will do only if anny of Arduinos arnt connected
         while not ((ar.Aport and ar.Bport) and ar.joyPort):
+
+            # and it will sleep for sec. then check if are anny new devices connected then check if ther are Axel bords
             time.sleep(1)
             print("čakám na pripojenie Arduín")
             ports = list(serial.tools.list_ports.comports())
             if not ports:
-                raise CustomError("Nenašiel som žiadne porty na hľadanie Axela")
+                raise CustomError("Nenašiel som žiadne porty na hľadanie Axela", 1)
                 pass
             if portsini != ports:
                 ar.ini(ports)  # moest important peace of code
                 portsini = ports
 
+        # will make subprocess
         p1 = subprocess.Popen(['python', './joy_ReadCOM.py', str(ar.joyPort), str(ar.baud_rate)], stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # will print out if debug to check if the subprocess is working
         if debug['0']:
             for _ in range(10):
                 ar.rjoy = p1.stdout.readline().decode().rstrip()
                 print(debug['gtext'] + f'joyAR says: {ar.rjoy}')
 
         #TODO spraviť na checkovanie či je raspberry ready (minimálne jedna RUKA)
+        #finnaly the while True loop
         while True:
+            ar.mathAX2(160,160,5)
             time.sleep(0.01)
-            # x = ar.readJOY()
+            x = ar.readJOY()
+            print(x)
 
-
+    # očakáva Ctrl + C prerušenie programu
     except KeyboardInterrupt:
         if debug['0']:
             print('\r' + debug['text'])
@@ -323,11 +374,13 @@ if __name__ == "__main__":
             print(debug['space'] + f'joy arduino: {ar.joy}')
         sys.exit(1)
 
+    # očakáva akýkoľvek iný Error
     except Exception as e:
         ar.cloSER()
         raise CustomError(e)
         # print(f'\nExeption: ({e})')
 
+    # "čisté" ukončenie programu
     finally:
         ar.cloSER()
         if debug['0']:
