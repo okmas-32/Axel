@@ -13,8 +13,9 @@ debug = {
     'math':bool(1),
     'ini':bool(1),
     'fromser':bool(1),
-    'text':'\x1b[0;30;41m' + 'debug: ' + '\x1b[0m', #hehe found coloring printout
-    'space':'\x1b[0;30;41m' + 'I ' + '\x1b[0m'
+    'text':'\x1b[1;30;41m' + 'debug: ' + '\x1b[0m', #hehe found coloring printout
+    'space':'\x1b[1;30;41m' + 'I ' + '\x1b[0m',
+    'gtext':'\33[92m' + 'I ' + '\33[0m'
 }
 
 #TODO dorobiť data storage pre každé AR (ukladanie údajov pri inicializácii na neskorší výpočet)
@@ -182,7 +183,7 @@ class Axel():
         self.u3 = beta
         # -3689,7823,14682,25,90'
 
-    def closeSER(self):
+    def cloSER(self):
         self.A.close()
         self.B.close()
         self.joy.close()
@@ -215,7 +216,7 @@ class Axel():
             }
         return out
 
-    def ini(self):
+    def ini(self, ports):
         """funkcia na získanie portov v ktorých je Arduino a získanie dát z Arduina o samotnej ruke
         (funguje aj vo windowse☺)"""
         portEH = []
@@ -224,7 +225,7 @@ class Axel():
             p = port.split(' ', 1)
             portEH.append(p[0])
             if debug['0']:
-                print(i)
+                print(str(i))
                 print(f'port: {port}')
             try:
                 ser = serial.Serial(portEH[i], self.baud_rate, timeout=2)
@@ -233,9 +234,8 @@ class Axel():
                 ser.open()
                 x = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
                 Ax = x.split(',')
-                if debug['0']: print(Ax)
                 if Ax[0] == 'Axel' and Ax[1] == 'Angie':
-                    if debug['0']: print(f'{portEH[i]} Angie Arduino')
+                    if debug['0']: print(debug['gtext'] + f'{portEH[i]} Angie Arduino')
                     self.A = ser
                     ser.close()
                     self.A.open()
@@ -249,7 +249,7 @@ class Axel():
                         'hook':Ax[6]
                     }
                 if Ax[0] == 'Axel' and Ax[1] == 'Bimbis:)':
-                    if debug['0']: print(f'{portEH[i]} Bimbis Arduino')
+                    if debug['0']: print(debug['gtext'] + '\33[5m'+ str(portEH[i])+ '\33[0m' +f' Bimbis Arduino') #skúšal som či sa nedá blikať s stringom ale očividne nie
                     self.B = ser
                     ser.close()
                     self.B.open()
@@ -258,7 +258,7 @@ class Axel():
                         'name':Ax[1]
                     }   #TODO dokončiť inicializaciu Bimbisa
                 if Ax[0] == 'Axel' and Ax[1] == 'joy':
-                    if debug['0']: print(f'{portEH[i]} joystick Arduino')
+                    if debug['0']: print(debug['gtext'] + f'{portEH[i]} joystick Arduino')
                     ser.close()
                     self.joy = ser
                     # self.joy.open()
@@ -268,10 +268,12 @@ class Axel():
                         'max':int(Ax[2]),
                         'center':int(Ax[2])/2
                     }
+                if debug['0']and Ax[0] == 'Axel' : print(debug['gtext'] + str(Ax))
             except:
                 pass
-        if not (self.Aport or self.Bport or self.joyPort):
-            raise CustomError("Nenašiel som žiadne porty s Axel doskami")
+        if not ((self.Aport or self.Bport) or self.joyPort):
+            print(debug['text'] + '\r'+ debug['space'] +"Nenašiel som žiadne porty s Axel doskami")
+            return
 
 class CustomError(Exception):
     def __init__(self, Exception):
@@ -280,21 +282,26 @@ class CustomError(Exception):
 
 if __name__ == "__main__":
     ar = Axel()
-    ports = list(serial.tools.list_ports.comports())
+    portsini = list(serial.tools.list_ports.comports())
     try:
-        while not (ar.Aport or ar.Bport or ar.joyPort):
+        ar.ini(portsini)
+        while not ((ar.Aport and ar.Bport) and ar.joyPort):
+            time.sleep(1)
+            print("čakám na pripojenie Arduín")
             ports = list(serial.tools.list_ports.comports())
             if not ports:
-                raise CustomError("Nenašiel som žiadne porty na hľadanie")
+                raise CustomError("Nenašiel som žiadne porty na hľadanie Axela")
                 pass
-            ar.ini()
+            if portsini != ports:
+                ar.ini(ports)  # moest important peace of code
+                portsini = ports
 
         p1 = subprocess.Popen(['python', './joy_ReadCOM.py', str(ar.joyPort), str(ar.baud_rate)], stdin=subprocess.PIPE,
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         if debug['0']:
             for _ in range(10):
                 ar.rjoy = p1.stdout.readline().decode().rstrip()
-                print(f'joyAR says: {ar.rjoy}')
+                print(debug['gtext'] + f'joyAR says: {ar.rjoy}')
 
         #TODO spraviť na checkovanie či je raspberry ready (minimálne jedna RUKA)
         while True:
@@ -303,21 +310,26 @@ if __name__ == "__main__":
 
 
     except KeyboardInterrupt:
-        # print(f'A arduino: {ar.A}')
-        # print(f'b arduino: {ar.B}')
-        # print(f'joy arduino: {ar.joy}')
-        ar.closeSER()
+        if debug['0']:
+            print('\r' + debug['text'])
+            print(debug['space'] + f'A arduino: {ar.A}')
+            print(debug['space'] + f'b arduino: {ar.B}')
+            print(debug['space'] + f'joy arduino: {ar.joy}')
+        ar.cloSER()
         print(f'\nAxel bol zastavený s commandom Ctrl + C\n')
-        # print(f'A arduino: {ar.A}')
-        # print(f'b arduino: {ar.B}')
-        # print(f'joy arduino: {ar.joy}')
+        if debug['0']:
+            print(debug['space'] + f'A arduino: {ar.A}')
+            print(debug['space'] + f'b arduino: {ar.B}')
+            print(debug['space'] + f'joy arduino: {ar.joy}')
         sys.exit(1)
+
     except Exception as e:
-        ar.closeSER()
+        ar.cloSER()
         raise CustomError(e)
         # print(f'\nExeption: ({e})')
+
     finally:
-        ar.closeSER()
+        ar.cloSER()
         if debug['0']:
             print('\r')
             print(debug['text'])
