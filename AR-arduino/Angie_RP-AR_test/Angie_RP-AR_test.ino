@@ -2,16 +2,17 @@
 #include <Servo.h>
 
 Servo servo[4];
-int pinsetup[4] = {3, 5, 9, 11};
-String spa = ",";
+int pinsetup[4] = {sr1, sr2, sr3, sr4};
+String spa = space;
 String input = "";
-bool debug = true;
+bool debug = debugb;
+String debugs = "debug:";
 
 float uhol[4] = {0, 0, 0, 0};
 float beta[4] = {0, 0, 0, 0};
 int milis;
 
-String base = _base, waist = _waist, arm1 = _arm1, arm2 = _arm2, hak = _hak;
+String base = _base, waist = _waist, arm1 = _arm1, arm2 = _arm2, hook = _hook;
 
 
 //-----------------------------------------------------------------------------------------------
@@ -25,7 +26,7 @@ void setup() {//========================================setup
     delay(200);
   }
   Serial.print(serStart);
-  Serial.print(base + spa + waist + spa + arm1 + spa + arm2 + spa + hak);
+  Serial.print(base + spa + waist + spa + arm1 + spa + arm2 + spa + hook);
   Serial.print('\n');
   //for (int i = 0; i < 5; i++) {
   //  servo[i].attach(pinsetup[i]);
@@ -55,10 +56,10 @@ float movMe(Servo &ser, float _beta, int _cas, float _alfa, int special = 0) {
   unsigned long akltualMillis = millis();
   long predMillis = akltualMillis;
   if (debug) {
-    Serial.println("-------------");
-    Serial.print("beta: "); Serial.println(beta);
-    Serial.print("cas: "); Serial.println(cas);
-    Serial.print("alfa: "); Serial.println(alfa);
+    Serial.print(debugs); Serial.println("-------------");
+    Serial.print(debugs); Serial.print("beta: "); Serial.println(beta);
+    Serial.print(debugs); Serial.print("cas: "); Serial.println(cas);
+    Serial.print(debugs); Serial.print("alfa: "); Serial.println(alfa);
   }
   while (beta != uh) {
     akltualMillis = millis();
@@ -68,8 +69,8 @@ float movMe(Servo &ser, float _beta, int _cas, float _alfa, int special = 0) {
       uh = alfa + (((beta - alfa) / cas) * t );
       predMillis = akltualMillis;   //zapametaj si cas
       if (debug) {
-        Serial.print("t: "); Serial.println(t); //ser.write(uh);
-        Serial.print("UH: "); Serial.println(uh);
+        Serial.print(debugs); Serial.print("t: "); Serial.println(t); //ser.write(uh);
+        Serial.print(debugs); Serial.print("UH: "); Serial.println(uh);
       }
       ser.write(uh);
     }
@@ -79,8 +80,8 @@ float movMe(Servo &ser, float _beta, int _cas, float _alfa, int special = 0) {
       uh = alfa + (((beta - alfa) / cas) * t );
       predMillis = akltualMillis;   //zapametaj si cas
       if (debug) {
-        Serial.print("-t: "); Serial.println(t); //ser.write(uh);
-        Serial.print("-UH: "); Serial.println(uh);
+        Serial.print(debugs); Serial.print("-t: "); Serial.println(t); //ser.write(uh);
+        Serial.print(debugs); Serial.print("-UH: "); Serial.println(uh);
       }
       ser.write(-uh);
     }
@@ -91,7 +92,7 @@ float movMe(Servo &ser, float _beta, int _cas, float _alfa, int special = 0) {
   if (beta == uh)
   {
     if (debug) {
-      Serial.println("--Uhol dokončený--");
+      Serial.print(debugs); Serial.println("--Uhol dokončený--");
     }
     return uh;
   }
@@ -103,7 +104,7 @@ void loop() {//========================================loop
     char rec = Serial.read();
     if (rec == '\n') {
       if (debug) {
-        Serial.print('\n' + "inpud: ");
+        Serial.print('\n' + debugs); Serial.print("inpud: ");
       }
       for (int i = 0; i < input.length(); i++) {
         if (input.substring(i, i + 1) == ",") {// hľadám "," o jeden dopredu
@@ -116,14 +117,14 @@ void loop() {//========================================loop
           }
           lastIndex = i + 1;
           if (debug) {
-            Serial.print(uhol[counter] + spa);
+            Serial.print(debugs);Serial.print(uhol[counter] + spa);
           }
           counter++;
         }
         else if (input.length() == i + 1) {// posledný block (milisekundy) nemajú za sebou "," tak tie musím zapísať od posledného zápisu po koniec dátového blocku
           milis = input.substring(lastIndex, i + 1).toInt();
           if (debug) {
-            Serial.print(milis);
+            Serial.print(debugs);Serial.print(milis);
           }
         }
       }
@@ -140,6 +141,7 @@ void loop() {//========================================loop
   if ((((uhol[0] != 0) or (uhol[1] != 0)) or ((uhol[2] != 0) or ( uhol[3] != 0))) and (Serial.available() == 0)) {
     if ( 1 == nerovnake(uhol[0], uhol[1], uhol[2], uhol[3], beta[0], beta[1], beta[2], beta[3])) {
       for (int i = 0; i < 5; i++) {
+        //TODO dorobiť lineárny pohyb všetkých sérv kontinuálne
         //if (debug) {Serial.println(uhol[i]);}
         beta[i] = movMe(servo[i], uhol[i], milis, beta[i]);
         uhol[i] = beta[i];

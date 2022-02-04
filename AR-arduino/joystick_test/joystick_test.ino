@@ -1,8 +1,10 @@
 #include "parametre.h"
 
-String spa = ",";
+String spa = space;
 String serData = "";
 bool armME = false;
+bool debug = debugb;  // ak chcem dostávať čistý výstup z arduina tak to nechám vypnuté
+String debugs = "debug:";
 int VRx1 = _VRx1, VRy1 = _VRy1,
     VRx2 = _VRx2, VRy2 = _VRy2,
     SW1 = _SW1, SW2 = _SW2;
