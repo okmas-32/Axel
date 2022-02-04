@@ -12,4 +12,6 @@ we are using:
 1. Buttons			[`link`](https://techfun.sk/produkt/tlacidlo-pbs-110-momentove-normalne-otvorene/)
 1. 2 axis joystick		[`link`](https://techfun.sk/produkt/joystick-2-osi-analogovy-vystup/)
 
+how i set up Raspberry pi [`here`](RP_info.txt)
+
 how [`Angie`](/3D_models/Angie.jpg) looks like :raised_hand_with_fingers_splayed:
