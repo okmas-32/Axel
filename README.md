@@ -4,7 +4,7 @@ this is ower school project
 its about 3D printed robotic hands and they controll with Raspberry Pi and Arduino combo
 
 we are using:
-1. Raspberry Pi 3 b+		\*didnt finde specifick link for it but this model*\
+1. Raspberry Pi 3 b+		[`link`](https://www.raspberrypi.com/products/raspberry-pi-3-model-b-plus/)
 1. Arduino Uno 2*		[`link`](https://techfun.sk/produkt/arduino-uno-r3-precizny-klon/)
 1. Arduino Nano			[`link`](https://techfun.sk/produkt/arduino-nano-precizny-klon/)
 1. Servo motorček SG90		[`link`](https://techfun.sk/produkt/servo-motorcek-sg90/)
