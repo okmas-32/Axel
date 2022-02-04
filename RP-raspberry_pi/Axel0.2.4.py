@@ -123,6 +123,65 @@ class Axel():
         print("---------------")
         return
 
+    def ini(self, ports):
+        """funkcia na získanie portov v ktorých je Arduino a získanie dát z Arduina o samotnej ruke
+        (funguje aj vo windowse☺)"""
+        portEH = []
+        for i, p in enumerate(ports):
+            port = str(p)
+            p = port.split(' ', 1)
+            portEH.append(p[0])
+            if debug['0']:
+                print(str(i))
+                print(f'port: {port}')
+            try:
+                ser = serial.Serial(portEH[i], self.baud_rate, timeout=2)
+                if ser.isOpen():
+                    ser.close()
+                ser.open()
+                x = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
+                Ax = x.split(',')
+                if Ax[0] == 'Axel' and Ax[1] == 'Angie':
+                    if debug['0']: print(debug['gtext'] + f'{portEH[i]} Angie Arduino')
+                    self.A = ser
+                    ser.close()
+                    self.A.open()
+                    self.Aport = portEH[i]
+                    self.AParametre = {
+                        'name': str(Ax[1]),
+                        'base': int(Ax[2]),
+                        'waist':int(Ax[3]),
+                        'arm1': int(Ax[4]),
+                        'arm2': int(Ax[5]),
+                        'hook': int(Ax[6])
+                    }
+                if Ax[0] == 'Axel' and Ax[1] == 'Bimbis:)':
+                    if debug['0']: print(debug['gtext'] + '\33[5m'+ str(portEH[i])+ '\33[0m' +f' Bimbis Arduino') #skúšal som či sa nedá blikať s stringom ale očividne nie
+                    self.B = ser
+                    ser.close()
+                    self.B.open()
+                    self.Bport = portEH[i]
+                    self.BParametre = {
+                        'name':str(Ax[1])
+                    }   #TODO dokončiť inicializaciu Bimbisa
+                if Ax[0] == 'Axel' and Ax[1] == 'joy':
+                    if debug['0']: print(debug['gtext'] + f'{portEH[i]} joystick Arduino')
+                    ser.close()
+                    self.joy = ser
+                    # self.joy.open()
+                    self.joyPort = portEH[i]
+                    self.joyParametre = {
+                        'name':str(Ax[1]),
+                        'max':int(Ax[2]),
+                        'center':int(Ax[2])/2
+                    }
+                if debug['0']and Ax[0] == 'Axel' : print(debug['gtext'] + str(Ax))
+            except:
+                pass
+        if not ((self.Aport or self.Bport) or self.joyPort):
+            print(debug['text'] + '\r'+ debug['space'] +"Nenašiel som žiadne porty s Axel doskami")
+            return
+
     def mathAX2(self,_X, _Y, _Z):  # TODO niekedy optimalizovať
         """matika na výpočet uhlov z súradníc pre 2kĺbového robota + výpočet rotácie základne
          s Z (roboj je v zmysle že je položený a pracovnú plochu má okolo seba)"""
@@ -253,64 +312,6 @@ class Axel():
             }
         return out
 
-    def ini(self, ports):
-        """funkcia na získanie portov v ktorých je Arduino a získanie dát z Arduina o samotnej ruke
-        (funguje aj vo windowse☺)"""
-        portEH = []
-        for i, p in enumerate(ports):
-            port = str(p)
-            p = port.split(' ', 1)
-            portEH.append(p[0])
-            if debug['0']:
-                print(str(i))
-                print(f'port: {port}')
-            try:
-                ser = serial.Serial(portEH[i], self.baud_rate, timeout=2)
-                if ser.isOpen():
-                    ser.close()
-                ser.open()
-                x = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
-                Ax = x.split(',')
-                if Ax[0] == 'Axel' and Ax[1] == 'Angie':
-                    if debug['0']: print(debug['gtext'] + f'{portEH[i]} Angie Arduino')
-                    self.A = ser
-                    ser.close()
-                    self.A.open()
-                    self.Aport = portEH[i]
-                    self.AParametre = {
-                        'name': str(Ax[1]),
-                        'base': int(Ax[2]),
-                        'waist':int(Ax[3]),
-                        'arm1': int(Ax[4]),
-                        'arm2': int(Ax[5]),
-                        'hook': int(Ax[6])
-                    }
-                if Ax[0] == 'Axel' and Ax[1] == 'Bimbis:)':
-                    if debug['0']: print(debug['gtext'] + '\33[5m'+ str(portEH[i])+ '\33[0m' +f' Bimbis Arduino') #skúšal som či sa nedá blikať s stringom ale očividne nie
-                    self.B = ser
-                    ser.close()
-                    self.B.open()
-                    self.Bport = portEH[i]
-                    self.BParametre = {
-                        'name':str(Ax[1])
-                    }   #TODO dokončiť inicializaciu Bimbisa
-                if Ax[0] == 'Axel' and Ax[1] == 'joy':
-                    if debug['0']: print(debug['gtext'] + f'{portEH[i]} joystick Arduino')
-                    ser.close()
-                    self.joy = ser
-                    # self.joy.open()
-                    self.joyPort = portEH[i]
-                    self.joyParametre = {
-                        'name':str(Ax[1]),
-                        'max':int(Ax[2]),
-                        'center':int(Ax[2])/2
-                    }
-                if debug['0']and Ax[0] == 'Axel' : print(debug['gtext'] + str(Ax))
-            except:
-                pass
-        if not ((self.Aport or self.Bport) or self.joyPort):
-            print(debug['text'] + '\r'+ debug['space'] +"Nenašiel som žiadne porty s Axel doskami")
-            return
 
 class CustomError(Exception):
     """my custom 'error handlerer' mainly due to coloring outpud/debug stuff but also it was funn tu setup"""
@@ -352,7 +353,7 @@ if __name__ == "__main__":
                 print(debug['gtext'] + f'joyAR says: {ar.rjoy}')
 
         #TODO spraviť na checkovanie či je raspberry ready (minimálne jedna RUKA)
-        #finnaly the while True loop
+        #===============finnaly the while True loop
         while True:
             ar.mathAX2(160,160,5)
             time.sleep(0.01)
