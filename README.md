@@ -1,6 +1,6 @@
 # Axel
 
-It's ower graduation project about 3D printed robotic hands and they controlled by RaspberryPi-Arduino combo
+It's our graduation project about 3D printed robotic hands and they controlled by RaspberryPi-Arduino combo
 
 we are using:
 1. Raspberry Pi 3 b+		[`link`](https://www.raspberrypi.com/products/raspberry-pi-3-model-b-plus/)
