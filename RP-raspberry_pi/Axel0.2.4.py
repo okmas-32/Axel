@@ -59,6 +59,8 @@ class Axel():
         #baud rate for all Arduinos
         self.baud_rate = baud_rate
 
+        self.notAxel = ""
+
         self.X = 90
         self.Y = 90
         self.Z = 0
@@ -134,76 +136,78 @@ class Axel():
             if debug['0']:
                 print(str(i))
                 print(f'port: {port}')
-            try:
-                ser = serial.Serial(portEH[i], self.baud_rate, timeout=2)
-                if ser.isOpen():
-                    ser.close()
-                ser.open()
-                x = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
-                Ax = x.split(',')
-                if not Ax[0] == 'Axel': raise Exception
-                if Ax[1] == 'Angie':
-                    if debug['0'] and debug['ini']: print(debug['gtext'] + f'{portEH[i]} Angie Arduino')
-                    self.A = ser
-                    ser.close()
-                    self.A.open()
-                    self.Aport = portEH[i]
-                    self.AParametre = {
-                        'name': str(Ax[1]),
-                        'base': int(Ax[2]),
-                        'waist':int(Ax[3]),
-                        'arm1': int(Ax[4]),
-                        'arm2': int(Ax[5]),
-                        'tool': int(Ax[6])
-                    }
-                if Ax[1] == 'Bimbis:)':
+            if not portEH == self.notAxel:
+
+                try:
+                    ser = serial.Serial(portEH[i], self.baud_rate, timeout=2)
+                    if ser.isOpen():
+                        ser.close()
+                    ser.open()
+                    x = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
+                    Ax = x.split(',')
+                    if not Ax[0] == 'Axel': self.notAxel = portEH
+                    if Ax[1] == 'Angie':
+                        if debug['0'] and debug['ini']: print(debug['gtext'] + f'{portEH[i]} Angie Arduino')
+                        self.A = ser
+                        ser.close()
+                        self.A.open()
+                        self.Aport = portEH[i]
+                        self.AParametre = {
+                            'name': str(Ax[1]),
+                            'base': int(Ax[2]),
+                            'waist':int(Ax[3]),
+                            'arm1': int(Ax[4]),
+                            'arm2': int(Ax[5]),
+                            'tool': int(Ax[6])
+                        }
+                    if Ax[1] == 'Bimbis:)':
+
+                        #
+                        if debug['0'] and debug['ini']: print(debug['gtext'] + '\33[5m'+ str(portEH[i])+ '\33[0m' +f' Bimbis Arduino') #skúšal som či sa nedá blikať s stringom ale očividne nie
+                        self.B = ser
+                        ser.close()
+                        self.B.open()
+                        self.Bport = portEH[i]
+                        self.BParametre = {
+                            'name': str(Ax[1]),
+                            'base': int(Ax[2]),
+                            'waist':int(Ax[3]),
+                            'arm1': int(Ax[4]),
+                            'arm2': int(Ax[5]),
+                            'tool': int(Ax[6])
+                        }
+                    if Ax[1] == 'joy':
+
+                        #
+                        if debug['0'] and debug['ini']: print(debug['gtext'] + f'{portEH[i]} joystick Arduino')
+                        ser.close()
+                        self.joy = ser
+                        # self.joy.open()
+                        self.joyPort = portEH[i]
+                        self.joyParametre = {
+                            'name':str(Ax[1]),
+                            'max':int(Ax[2]),
+                            'dead':int(Ax[3]),
+                            'center':int(int(Ax[2])/2)
+                        }
+
+                        # iniciuje proces 1 (p1) ako clobálne a dá mu dubprocess s python programom (joy_ReadCOM.py) + port a baud rate v ktorom pracujeme
+                        global p1
+                        p1 = subprocess.Popen(['python', './joy_ReadCOM.py', str(self.joyPort), str(self.baud_rate)],
+                                              stdin=subprocess.PIPE,
+                                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        # will print out if debug to check if the subprocess is working
+                        if debug['0'] and debug['ini']:
+                            for _ in range(10):
+                                rjoy = p1.stdout.readline().decode().rstrip()
+                                print(debug['gtext'] + f'joyAR says: {rjoy}')
 
                     #
-                    if debug['0'] and debug['ini']: print(debug['gtext'] + '\33[5m'+ str(portEH[i])+ '\33[0m' +f' Bimbis Arduino') #skúšal som či sa nedá blikať s stringom ale očividne nie
-                    self.B = ser
-                    ser.close()
-                    self.B.open()
-                    self.Bport = portEH[i]
-                    self.BParametre = {
-                        'name': str(Ax[1]),
-                        'base': int(Ax[2]),
-                        'waist':int(Ax[3]),
-                        'arm1': int(Ax[4]),
-                        'arm2': int(Ax[5]),
-                        'tool': int(Ax[6])
-                    }   #TODO dokončiť inicializaciu Bimbisa
-                if Ax[1] == 'joy':
-
-                    #
-                    if debug['0'] and debug['ini']: print(debug['gtext'] + f'{portEH[i]} joystick Arduino')
-                    ser.close()
-                    self.joy = ser
-                    # self.joy.open()
-                    self.joyPort = portEH[i]
-                    self.joyParametre = {
-                        'name':str(Ax[1]),
-                        'max':int(Ax[2]),
-                        'dead':int(Ax[3]),
-                        'center':int(int(Ax[2])/2)
-                    }
-
-                    # iniciuje proces 1 (p1) ako clobálne a dá mu dubprocess s python programom (joy_ReadCOM.py) + port a baud rate v ktorom pracujeme
-                    global p1
-                    p1 = subprocess.Popen(['python', './joy_ReadCOM.py', str(self.joyPort), str(self.baud_rate)],
-                                          stdin=subprocess.PIPE,
-                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    # will print out if debug to check if the subprocess is working
                     if debug['0'] and debug['ini']:
-                        for _ in range(10):
-                            rjoy = p1.stdout.readline().decode().rstrip()
-                            print(debug['gtext'] + f'joyAR says: {rjoy}')
-
-                #
-                if debug['0'] and debug['ini']:
-                    print(debug['gtext'] + str(Ax))
-                    print('------------------------\r')
-            except:
-                pass
+                        print(debug['gtext'] + str(Ax))
+                        print('------------------------\r')
+                except:
+                    pass
 
         #
         if not ((self.Aport or self.Bport) or self.joyPort):
@@ -323,25 +327,40 @@ class Axel():
         #     print(x)
 
         # na čítanie a analýzu údajov z joy_ReadCOM.py bežiaceho v subprocese
-        re = p1.stdout.readline().decode().rstrip().split(',')
-        re[0] = int(re[0]) - self.joyParametre['center']
-        re[1] = int(re[1]) - self.joyParametre['center']
-        re[3] = int(re[3]) - self.joyParametre['center']
-        re[4] = int(re[4]) - self.joyParametre['center']
-        out = {
-                1:{
-                    'X':re[0],
-                    'Y' : re[1],
-                    'SW' : re[2]
-                },
-                2:{
-                    'X':re[3],
-                    'Y' : re[4],
-                    'SW' : re[5]
+        try:
+            re = p1.stdout.readline().decode().rstrip().split(',')
+            re[0] = int(re[0]) - self.joyParametre['center']
+            re[1] = int(re[1]) - self.joyParametre['center']
+            re[3] = int(re[3]) - self.joyParametre['center']
+            re[4] = int(re[4]) - self.joyParametre['center']
+            out = {
+                    1:{
+                        'X' : re[0],
+                        'Y' : re[1],
+                        'SW' : re[2]
+                    },
+                    2:{
+                        'X' : re[3],
+                        'Y' : re[4],
+                        'SW' : re[5]
+                    }
                 }
-            }
-        self.rjoy = out
-        return out
+            self.rjoy = out
+            return out
+        except Exception as e:
+            CustomError(e)
+
+    def sendAxel(self, ser, data):
+
+        rou = 100   # round
+        space = "," # medzera aby to Arduino vedelo prečítať
+
+        serdata = str(int(round(self.u1, 2) * rou)) + space + str(int(round(self.u2, 2) * rou)) + space + str(
+            int(round(self.u3, 2) * rou)) + space + str(int(round(self.u4, 2) / 180 * 100)) + space + str(500)
+        print(serdata)
+        ser.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
+        c = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
+        print(c)
 
 
 class CustomError(Exception):
@@ -382,18 +401,18 @@ if __name__ == "__main__":
         while True:
             time.sleep(0.01)
             x = ar.readJOY()
-            print(x)
+            
 
     # očakáva Ctrl + C prerušenie programu
     except KeyboardInterrupt:
-        if debug['0']:
+        if debug['0'] and debug['ini']:
             print('\r' + debug['text'])
             print(debug['space'] + f'A arduino: {ar.A}')
             print(debug['space'] + f'b arduino: {ar.B}')
             print(debug['space'] + f'joy arduino: {ar.joy}')
         ar.cloSER()
         print(f'\nAxel bol zastavený s commandom Ctrl + C\n')
-        if debug['0']:
+        if debug['0'] and debug['ini']:
             print(debug['space'] + f'A arduino: {ar.A}')
             print(debug['space'] + f'b arduino: {ar.B}')
             print(debug['space'] + f'joy arduino: {ar.joy}')

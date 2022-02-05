@@ -13,6 +13,8 @@ we are using:
 
 how i set up Raspberry pi and its hotspot in RP_info.txt
 
+python code works on linux and on windows (i dont know about mack)
+
 how [`Angie`](/3D_models/Angie.jpg) looks like :raised_hand_with_fingers_splayed:
 
 how [`Bimbis`](/3D_models/Bimbis.jpg) looks like :mechanical_arm:

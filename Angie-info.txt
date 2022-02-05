@@ -7,16 +7,17 @@ dĺžky:
 	
 	Chnapaky: cca	40mm
 	
-	(arm1+amr2) cca 250mm 
+	(arm1+amr2) cca 250mm
 
-motory (servá):
+motory (servos):
 
 	Servo Motor MG996R (3ks)
 		Operating Voltage is +5V typically
-		Current: 		2.5A (6V)
+		Running Current:	500-900mA (6V)
+		Stall Current:		2.5A (6V)
 		Stall Torque: 		9.4 kg/cm (at 4.8V)
 		Maximum Stall Torque: 	11 kg/cm (6V)
-		Operating speed:	0.17 s/60° (1°/~3ms)	// irl bullshit
+		Operating speed:	0.17 s/60° (1°/~3ms)
 		Gear Type: 		Metal
 		Rotation: 		0°-180°
 		Weight of motor: 	55gm
@@ -25,21 +26,6 @@ motory (servá):
 		Voltage:		4.8-6VDC  (5V Typical)
 		Current (stall):	360mA (measured) (idle 10mA)
 		Stall Torque:		1.7 kg-cm (measured)
-		Operating Speed:	0.12s / 60° (varies with VDC)	// irl bullshit
+		Operating Speed:	0.12s / 60° (varies with VDC)
 		Gear Type: 		Plastic
 		Rotation: 		0°-180°
-
-	Servo Driver HAT (do buducna)
-		https://www.waveshare.com/wiki/Servo_Driver_HAT
-
-
-
-inpruve:
-	stránka
-	Bézier Curve (3 bodové krivky ktoré sa tiež používajú na zobrazovanie fondow)
-		-GIF		https://ambrosiogabe.github.io/assets/images/mathBehindFonts/bezierMath.gif
-		-stránka	https://ambrosiogabe.github.io/the-math-behind-font-rasterization/
-		-video		https://www.youtube.com/watch?v=LaYPoMPRSlk
-	tutorial na pomali vsetko co treba vylepsit:
-		-https://www.societyofrobots.com/robot_arm_tutorial.shtml
-

@@ -22,5 +22,13 @@ postup:
 	joistick (do budúcna):
 		https://iot-guider.com/raspberrypi/analog-joystick-module-in-raspberry-pi/attachment/interfacing-analog-joystick-module-in-raspberry-pi/
 
+impruve:
+	stránka
+	Bézier Curve (3 bodové krivky ktoré sa tiež používajú na zobrazovanie fondow)
+		-GIF		https://ambrosiogabe.github.io/assets/images/mathBehindFonts/bezierMath.gif
+		-stránka	https://ambrosiogabe.github.io/the-math-behind-font-rasterization/
+		-video		https://www.youtube.com/watch?v=LaYPoMPRSlk
+	tutorial na pomali vsetko co treba vylepsit:
+		-https://www.societyofrobots.com/robot_arm_tutorial.shtml
 
-- viem že je možné z Raspberry pi programovať Arduino neskôr sa na to pozriem
+	viem že je možné z Raspberry pi programovať Arduino neskôr sa na to pozriem
