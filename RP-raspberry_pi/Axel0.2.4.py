@@ -10,9 +10,9 @@ baud_rate = 115200
 
 debug = {
     '0':bool(1),
-    'math':bool(1),
+    'math':bool(0),
     'ini':bool(1),
-    'fromser':bool(1),
+    'fromser':bool(0),
     'text':'\x1b[1;33;33m' + 'debug:' + '\x1b[0m', #hehe found coloring printout
     'space':'\x1b[1;33;33m' + 'I ' + '\x1b[0m',
     'gtext':'\33[92m' + 'I ' + '\33[0m',
@@ -141,8 +141,9 @@ class Axel():
                 ser.open()
                 x = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
                 Ax = x.split(',')
-                if Ax[0] == 'Axel' and Ax[1] == 'Angie':
-                    if debug['0']: print(debug['gtext'] + f'{portEH[i]} Angie Arduino')
+                if not Ax[0] == 'Axel': raise Exception
+                if Ax[1] == 'Angie':
+                    if debug['0'] and debug['ini']: print(debug['gtext'] + f'{portEH[i]} Angie Arduino')
                     self.A = ser
                     ser.close()
                     self.A.open()
@@ -153,19 +154,28 @@ class Axel():
                         'waist':int(Ax[3]),
                         'arm1': int(Ax[4]),
                         'arm2': int(Ax[5]),
-                        'hook': int(Ax[6])
+                        'tool': int(Ax[6])
                     }
-                if Ax[0] == 'Axel' and Ax[1] == 'Bimbis:)':
-                    if debug['0']: print(debug['gtext'] + '\33[5m'+ str(portEH[i])+ '\33[0m' +f' Bimbis Arduino') #skúšal som či sa nedá blikať s stringom ale očividne nie
+                if Ax[1] == 'Bimbis:)':
+
+                    #
+                    if debug['0'] and debug['ini']: print(debug['gtext'] + '\33[5m'+ str(portEH[i])+ '\33[0m' +f' Bimbis Arduino') #skúšal som či sa nedá blikať s stringom ale očividne nie
                     self.B = ser
                     ser.close()
                     self.B.open()
                     self.Bport = portEH[i]
                     self.BParametre = {
-                        'name':str(Ax[1])
+                        'name': str(Ax[1]),
+                        'base': int(Ax[2]),
+                        'waist':int(Ax[3]),
+                        'arm1': int(Ax[4]),
+                        'arm2': int(Ax[5]),
+                        'tool': int(Ax[6])
                     }   #TODO dokončiť inicializaciu Bimbisa
-                if Ax[0] == 'Axel' and Ax[1] == 'joy':
-                    if debug['0']: print(debug['gtext'] + f'{portEH[i]} joystick Arduino')
+                if Ax[1] == 'joy':
+
+                    #
+                    if debug['0'] and debug['ini']: print(debug['gtext'] + f'{portEH[i]} joystick Arduino')
                     ser.close()
                     self.joy = ser
                     # self.joy.open()
@@ -173,11 +183,29 @@ class Axel():
                     self.joyParametre = {
                         'name':str(Ax[1]),
                         'max':int(Ax[2]),
-                        'center':int(Ax[2])/2
+                        'dead':int(Ax[3]),
+                        'center':int(int(Ax[2])/2)
                     }
-                if debug['0']and Ax[0] == 'Axel' : print(debug['gtext'] + str(Ax))
+
+                    # iniciuje proces 1 (p1) ako clobálne a dá mu dubprocess s python programom (joy_ReadCOM.py) + port a baud rate v ktorom pracujeme
+                    global p1
+                    p1 = subprocess.Popen(['python', './joy_ReadCOM.py', str(self.joyPort), str(self.baud_rate)],
+                                          stdin=subprocess.PIPE,
+                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    # will print out if debug to check if the subprocess is working
+                    if debug['0'] and debug['ini']:
+                        for _ in range(10):
+                            rjoy = p1.stdout.readline().decode().rstrip()
+                            print(debug['gtext'] + f'joyAR says: {rjoy}')
+
+                #
+                if debug['0'] and debug['ini']:
+                    print(debug['gtext'] + str(Ax))
+                    print('------------------------\r')
             except:
                 pass
+
+        #
         if not ((self.Aport or self.Bport) or self.joyPort):
             print(debug['text'] + '\r'+ debug['space'] +"Nenašiel som žiadne porty s Axel doskami")
             return
@@ -199,7 +227,7 @@ class Axel():
         # súradnice ktoré poslalo Arduino pri inicializácii
         Y -= self.AParametre['base'] + self.AParametre['waist']
         dlzka1 = self.AParametre['arm1']
-        dlzka2 = self.AParametre['arm2'] + self.AParametre['hook']
+        dlzka2 = self.AParametre['arm2'] + self.AParametre['tool']
 
         # skontrolovanie či sú všetky súradnice v dosahu ak nie tak ich prepíše na najbližšie v dosahu
         #TODO spraiviť dosah automaticky vypočítaný nie manuálne napísaný
@@ -279,7 +307,7 @@ class Axel():
         self.joy.close()
 
     def readJOY(self):
-        ''' tato funkcia je čisto na čítanie z joystick Arduina'''
+        """tato funkcia je čisto na čítanie z joystick Arduina"""
 
         # if self.rjoy is None:
         #     self.joy.write(('1' + '\r\n').encode(locale.getpreferredencoding().rstrip()))
@@ -293,6 +321,8 @@ class Axel():
         #     self.rjoy = c
         #     x = c.split(',')
         #     print(x)
+
+        # na čítanie a analýzu údajov z joy_ReadCOM.py bežiaceho v subprocese
         re = p1.stdout.readline().decode().rstrip().split(',')
         re[0] = int(re[0]) - self.joyParametre['center']
         re[1] = int(re[1]) - self.joyParametre['center']
@@ -310,6 +340,7 @@ class Axel():
                     'SW' : re[5]
                 }
             }
+        self.rjoy = out
         return out
 
 
@@ -322,6 +353,8 @@ class CustomError(Exception):
             print('\r' + debug['space'] + debug['Error'] + str(Exception))
         pass
 
+
+# toto pôjde jedine ak to je spustené ako main program
 if __name__ == "__main__":
     ar = Axel()
     portsini = list(serial.tools.list_ports.comports())
@@ -343,19 +376,10 @@ if __name__ == "__main__":
                 ar.ini(ports)  # moest important peace of code
                 portsini = ports
 
-        # will make subprocess
-        p1 = subprocess.Popen(['python', './joy_ReadCOM.py', str(ar.joyPort), str(ar.baud_rate)], stdin=subprocess.PIPE,
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # will print out if debug to check if the subprocess is working
-        if debug['0']:
-            for _ in range(10):
-                ar.rjoy = p1.stdout.readline().decode().rstrip()
-                print(debug['gtext'] + f'joyAR says: {ar.rjoy}')
 
         #TODO spraviť na checkovanie či je raspberry ready (minimálne jedna RUKA)
         #===============finnaly the while True loop
         while True:
-            ar.mathAX2(160,160,5)
             time.sleep(0.01)
             x = ar.readJOY()
             print(x)

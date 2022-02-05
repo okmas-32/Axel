@@ -9,13 +9,14 @@ int VRx1 = _VRx1, VRy1 = _VRy1,
     VRx2 = _VRx2, VRy2 = _VRy2,
     SW1 = _SW1, SW2 = _SW2;
 
-String maxj = _maxj;
+String maxj = _maxj, off = _off;
 String midx1 = _midx1, midy1 = _midy1, midx2 = _midx2, midy2 = _midy2;
 
 void setup() {
   Serial.begin(SERIAL_BAUD);
   Serial.print(serStart);
-  Serial.print(maxj + spa + midx1 + spa + midy1 + spa + midx2 + spa + midy2);
+  Serial.print(maxj + spa + off);
+  //Serial.print(maxj + spa + midx1 + spa + midy1 + spa + midx2 + spa + midy2);
   //delay(1500);    //pauza kvôli tomu aby RP vôbec dokázal stihnúť prečítať čo je toto AR zač
   Serial.print('\n');
 
@@ -55,7 +56,7 @@ void loop() {
     Serial.print(",");
     Serial.print(!digitalRead(SW1));
     Serial.print(",");
-    delay(50);
+    delay(25);
 
     // Joystick 2:
     Serial.print(analogRead(VRx2));
@@ -63,7 +64,7 @@ void loop() {
     Serial.print(analogRead(VRy2));
     Serial.print(",");
     Serial.println(!digitalRead(SW2));
-    delay(50);
+    delay(25);
   }
   else {
     delay(100);

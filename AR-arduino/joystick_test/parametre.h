@@ -7,7 +7,8 @@
 #define space ","
 #define SERIAL_BAUD 115200
 
-#define _maxj "1024"
+#define _maxj "1024"  // maximum joisticku v každej osi
+#define _off "20"     // +- 20 center
 
 // Joystick 1:
 #define _VRx1 0       // X analogovy Pin 0

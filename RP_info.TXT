@@ -22,3 +22,5 @@ postup:
 	joistick (do budúcna):
 		https://iot-guider.com/raspberrypi/analog-joystick-module-in-raspberry-pi/attachment/interfacing-analog-joystick-module-in-raspberry-pi/
 
+
+- viem že je možné z Raspberry pi programovať Arduino neskôr sa na to pozriem
