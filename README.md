@@ -21,5 +21,5 @@ how [`Bimbis`](/3D_models/Bimbis.jpg) looks like :mechanical_arm:
 
 ---
 
-Dominik Mankovický
+Dominik Mankovický,
 Samuel Čápek
