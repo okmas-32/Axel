@@ -23,6 +23,10 @@ try:
         sys.stdout.write(output) # write output to stdout
         sys.stdout.flush()
 
+
+
+
+
 except Exception as e:
     #ak je nejaký eror tak ho iba vypíše do "výstupu" tohoto bloku kódu
     sys.stdout.write(e)

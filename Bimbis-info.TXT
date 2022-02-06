@@ -5,6 +5,13 @@ dĺžky:
 	Arm2:		115mm
 	Nastroj:	100mm
 
+servo note:
+	dve servá sú oproti sebe tak jedno z nich terba rozlíšiť (nazval som ho angry twin) a tomu servu treba prepočítať uhol "opačne" oproti jeho normálnej dvojičke vzhľadom k ich maximu (čo je 180°)
+	v realite je servo označené bielymi botkami
+	inými slovami:
+		servo twin write(pos)
+		servo angry_twin write(180 - pos)
+
 
 motory (servos):
 

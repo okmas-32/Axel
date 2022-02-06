@@ -21,9 +21,11 @@
 #define i_arm2 96
 #define i_hak 75
 
+// pins for servos
 #define sr1 3
-#define sr2 5
-#define sr3 9
-#define sr4 11
+#define sr2 5   // "twins" angry twin
+#define sr3 6   // "twins" normal twin
+#define sr4 9
+#define sr5 11  // tool: 140-180°
 
 #endif

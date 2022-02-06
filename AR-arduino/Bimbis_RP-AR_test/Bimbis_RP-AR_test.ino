@@ -1,8 +1,8 @@
 #include "parametre.h"
 #include <Servo.h>
 
-Servo servo[4];
-int pinsetup[4] = {sr1, sr2, sr3, sr4};
+Servo servo[5];
+int pinsetup[5] = {sr1, sr2, sr3, sr4, sr5}, maxx = 180;
 String spa = space;
 String input = "";
 bool debug = debugb;
@@ -31,15 +31,22 @@ void setup() {//========================================setup
   servo[1].attach(pinsetup[1]);
   servo[2].attach(pinsetup[2]);
   servo[3].attach(pinsetup[3]);
-  servo[0].write(90);
+  servo[4].attach(pinsetup[4]);
+
+  servo[0].write(0);
   servo[1].write(90);
   servo[2].write(90);
-  servo[3].write(0);
+  servo[3].write(90);
+  servo[4].write(140);
 }
 
 bool nerovnake(float _u1, float _u2, float _u3, float _u4, float u1, float u2, float u3, float u4) {
   return (((_u1 != u1) or (_u2 != u2)) or ((_u3 != u3) or (_u4 != u4)));
 }
+
+//---------------------------------------------------------------------------
+// nezabudni na to že pohyb na základni sú 2 servá
+//
 
 float movMe(Servo &ser, float _beta, int _cas, float _alfa, int special = 0) {
   float beta = _beta; // konečný uhol

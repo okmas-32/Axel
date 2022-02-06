@@ -38,31 +38,36 @@ void setup() {//========================================setup
   servo[0].write(90);
   servo[1].write(90);
   servo[2].write(90);
-  servo[3].write(0);
+  servo[3].write(90);
 }
 
 bool nerovnake(float _u1, float _u2, float _u3, float _u4, float u1, float u2, float u3, float u4) {
   return (((_u1 != u1) or (_u2 != u2)) or ((_u3 != u3) or (_u4 != u4)));
 }
 
-float movMe(Servo &ser, float _beta, int _cas, float _alfa, int special = 0) {
-  float beta = _beta; // konečný uhol
+
+//------------ hlavná časť pre pohyb ------------
+void movMe(Servo *ser, int sern , float *_beta, int betan , int _cas, float *_alfa, int alfan, int special = 0) {
+
+  float beta[betan] = {_beta}; // konečný uhol
   int cas = _cas;     // zadaný čas na pohyb
-  float alfa = _alfa; // začiatočný uhol
-  long t = 0;         // čas od začiatku pohybu
+  float alfa[alfan] = _alfa[]; // začiatočný uhol
+  long t[sern] = {0,0,0,0};         // čas od začiatku pohybu
   float uh = 0;       // na ukladanie lokalneho uhlu
 
-  int oneskorenie = 1;
+
+  int oneskorenie = 20;
   unsigned long akltualMillis = millis();
   long predMillis = akltualMillis;
-  if (debug) {
+  /*if (debug) {
     Serial.print(debugs); Serial.println("-------------");
     Serial.print(debugs); Serial.print("beta: "); Serial.println(beta);
     Serial.print(debugs); Serial.print("cas: "); Serial.println(cas);
     Serial.print(debugs); Serial.print("alfa: "); Serial.println(alfa);
   }
-  while (beta != uh) {
-    akltualMillis = millis();
+ /* while (beta != uh) {
+
+    akltualMillis = millis();   // stále aktualizujem čas
     if ((akltualMillis - predMillis >= oneskorenie) and (uh < beta))
     {
       t += akltualMillis - predMillis;
@@ -72,7 +77,29 @@ float movMe(Servo &ser, float _beta, int _cas, float _alfa, int special = 0) {
         Serial.print(debugs); Serial.print("t: "); Serial.println(t); //ser.write(uh);
         Serial.print(debugs); Serial.print("UH: "); Serial.println(uh);
       }
-      ser.write(uh);
+      ser[0].write(uh);
+    }
+
+
+  }
+
+
+
+  /*
+    while (beta != uh) {
+
+    akltualMillis = millis();   // stále aktualizujem čas
+
+    if ((akltualMillis - predMillis >= oneskorenie) and (uh < beta))
+    {
+      t += akltualMillis - predMillis;
+      uh = alfa + (((beta - alfa) / cas) * t );
+      predMillis = akltualMillis;   //zapametaj si cas
+      if (debug) {
+        Serial.print(debugs); Serial.print("t: "); Serial.println(t); //ser.write(uh);
+        Serial.print(debugs); Serial.print("UH: "); Serial.println(uh);
+      }
+      ser[0].write(uh);
     }
     if ((akltualMillis - predMillis >= oneskorenie) and (uh > beta))
     {
@@ -83,23 +110,28 @@ float movMe(Servo &ser, float _beta, int _cas, float _alfa, int special = 0) {
         Serial.print(debugs); Serial.print("-t: "); Serial.println(t); //ser.write(uh);
         Serial.print(debugs); Serial.print("-UH: "); Serial.println(uh);
       }
-      ser.write(-uh);
+      ser[0].write(-uh);
     }
     if (t >= cas) {
       beta = uh;
     }
-  }
+    }
+  
+
   if (beta == uh)
   {
+    Serial.println("1");
     if (debug) {
       Serial.print(debugs); Serial.println("--Uhol dokončený--");
     }
-    return uh;
-  }
+  }*/
 }
+
 int counter = 0;
 int lastIndex = 0;
-void loop() {//========================================loop
+
+void loop() {//=============================================loop
+
   while (Serial.available() > 0) {
     char rec = Serial.read();
     if (rec == '\n') {
@@ -107,24 +139,24 @@ void loop() {//========================================loop
         Serial.print('\n' + debugs); Serial.print("inpud: ");
       }
       for (int i = 0; i < input.length(); i++) {
-        if (input.substring(i, i + 1) == ",") {// hľadám "," o jeden dopredu
+        if (input.substring(i, i + 1) == ",") {         // hľadám "," o jeden dopredu
           uhol[counter] = input.substring(lastIndex, i).toFloat() / 100;
-          if (counter == 3) { //pre posledný uhol ktorý je v %
+          if (counter == 3) {                           //pre posledný uhol ktorý je v %
             uhol[counter] = uhol[counter] * 180;
           }
-          if (counter == 2) { //kvôli 3mu servu lebo je v hardweare opačne
+          if (counter == 2) {                           //kvôli 3mu servu lebo je v hardweare opačne
             uhol[counter] = +(uhol[counter] - 180);
           }
           lastIndex = i + 1;
           if (debug) {
-            Serial.print(debugs);Serial.print(uhol[counter] + spa);
+            Serial.print(debugs); Serial.print(uhol[counter] + spa);
           }
           counter++;
         }
-        else if (input.length() == i + 1) {// posledný block (milisekundy) nemajú za sebou "," tak tie musím zapísať od posledného zápisu po koniec dátového blocku
+        else if (input.length() == i + 1) {             // posledný block (milisekundy) nemajú za sebou "," tak tie musím zapísať od posledného zápisu po koniec dátového blocku
           milis = input.substring(lastIndex, i + 1).toInt();
           if (debug) {
-            Serial.print(debugs);Serial.print(milis);
+            Serial.print(debugs); Serial.print(milis);
           }
         }
       }
@@ -140,14 +172,19 @@ void loop() {//========================================loop
   }
   if ((((uhol[0] != 0) or (uhol[1] != 0)) or ((uhol[2] != 0) or ( uhol[3] != 0))) and (Serial.available() == 0)) {
     if ( 1 == nerovnake(uhol[0], uhol[1], uhol[2], uhol[3], beta[0], beta[1], beta[2], beta[3])) {
-      for (int i = 0; i < 5; i++) {
+      movMe(servo, sizeof(pinsetup), uhol, sizeof(uhol), milis, beta, sizeof(beta));
+
+      /*for (int i = 0; i < 5; i++) {
         //TODO dorobiť lineárny pohyb všetkých sérv kontinuálne
+
         //if (debug) {Serial.println(uhol[i]);}
         beta[i] = movMe(servo[i], uhol[i], milis, beta[i]);
         uhol[i] = beta[i];
         //if (debug) {Serial.println("moveDone");}
 
-      }
+        }
+        //beta[i] = movMe(servo[i], uhol[i], milis, beta[i]);
+      */
     }
   }
 }
