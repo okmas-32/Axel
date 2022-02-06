@@ -10,3 +10,4 @@ musel som použiť baudrate 115200 inak by to nestíhalo taký veľký nával d�
 
 !!!Arduino nano používa ATmega328P (old bootloader)
 :3
+hello
