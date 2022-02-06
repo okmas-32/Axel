@@ -4,8 +4,8 @@ dĺžky:
 	Arm1:		150mm
 	Arm2:		115mm
 	Nastroj:	100mm
-	
-	
+
+
 motory (servos):
 
 	Servo Motor MG996R (4ks)
