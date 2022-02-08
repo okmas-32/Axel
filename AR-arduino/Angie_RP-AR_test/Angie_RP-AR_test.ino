@@ -18,7 +18,7 @@ int milis;
 String base = _base, waist = _waist, arm1 = _arm1, arm2 = _arm2, hook = _hook;
 
 unsigned long aktMill = millis();
-bool done = false;
+bool ndone = true, loo = false;
 
 //-----------------------------------------------------------------------------------------------
 void setup() {//========================================setup
@@ -59,7 +59,7 @@ void setup() {//========================================setup
 bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int alfan, int special = 0) {
   digitalWrite(LED_BUILTIN, HIGH);
   int cas = _cas;                   // zadaný čas na pohyb
-  long t = 0;                       // čas od začiatku pohybu
+  long t = special;                       // čas od začiatku pohybu
 
   float uh[betan];
   int oneskorenie = 19;
@@ -105,7 +105,7 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
         beta[i] = uh[i];
         Serial.println("1");
         digitalWrite(LED_BUILTIN, LOW);
-        done = false;
+        ndone = false;
         delay(30);
         return;
       }
@@ -223,7 +223,7 @@ void loop() {//=============================================loop
       counter = 0;
       lastIndex = 0;
       rec = "";
-      done = false;
+      ndone = true;
     }
     else {
       input += rec;
@@ -234,12 +234,13 @@ void loop() {//=============================================loop
 
   //Serial.println(sizeof(pinsetup));
 
-  bool loo = ((uhol[0] != beta[0]) or (uhol[1] != beta[1]) or ((uhol[3] != beta[3]) or (uhol[2] != beta[2])));
+  loo = (((uhol[0] != beta[0]) or (uhol[1] != beta[1]) or ((uhol[3] != beta[3]) or (uhol[2] != beta[2]))));
 
-  if (loo or done) {
+  if (loo and ndone) {
     movMe(servo, uhol, (sizeof(uhol) / 2) / 2, milis, beta, (sizeof(beta) / 2) / 2);
-
+    movMe(servo, uhol, (sizeof(uhol) / 2) / 2, milis, beta, (sizeof(beta) / 2) / 2);
     //Serial.println("---DONE---");
+    loo = (((uhol[0] != beta[0]) or (uhol[1] != beta[1]) or ((uhol[3] != beta[3]) or (uhol[2] != beta[2]))));
 
     /*for (int i = 0; i < 5; i++) {
       //TODO dorobiť lineárny pohyb všetkých sérv kontinuálne
