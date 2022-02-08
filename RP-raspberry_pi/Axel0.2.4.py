@@ -13,9 +13,9 @@ debug = {
     'math':bool(0),
     'ini':bool(1),
     'fromser':bool(0),
-    'text':'\x1b[1;33;33m' + 'debug:' + '\x1b[0m', #hehe found coloring printout
+    'text':'\x1b[1;33;33m' + 'debug:' + '\x1b[0m',  # hehe found coloring printout
     'space':'\x1b[1;33;33m' + 'I ' + '\x1b[0m',
-    'gtext':'\33[92m' + 'I ' + '\33[0m',
+    'gtext':'\33[92m' + 'I ' + '\33[0m',            # green alebo good text
     'Error':'\x1b[1;30;41m' + '\tE ' + '\x1b[0m'
 }
 
@@ -42,9 +42,9 @@ class Axel():
         self.u4 = 0
 
         #ports in serial
-        self.A = serial.Serial()
-        self.B = serial.Serial()
-        self.joy = serial.Serial()
+        self.A = serial.Serial()        # ser. pre Angie
+        self.B = serial.Serial()        # ser. pre Bimbisa
+        self.joy = serial.Serial()      # ser. pre joystick ale aj tak sa nepoužíva lebo ho zapína subprocess
 
         #ports in string
         self.Aport = ""
@@ -59,7 +59,7 @@ class Axel():
         #baud rate for all Arduinos
         self.baud_rate = baud_rate
 
-        self.notAxel = ""
+        self.notAxel = [0]*5
 
         self.X = 90
         self.Y = 90
@@ -136,8 +136,7 @@ class Axel():
             if debug['0']:
                 print(str(i))
                 print(f'port: {port}')
-            if not portEH == self.notAxel:
-
+            if not portEH == self.notAxel[i]:
                 try:
                     ser = serial.Serial(portEH[i], self.baud_rate, timeout=2)
                     if ser.isOpen():
@@ -202,17 +201,20 @@ class Axel():
                                 rjoy = p1.stdout.readline().decode().rstrip()
                                 print(debug['gtext'] + f'joyAR says: {rjoy}')
 
+                    else:  self.notAxel[i] = portEH
+
                     #
                     if debug['0'] and debug['ini']:
                         print(debug['gtext'] + str(Ax))
                         print('------------------------\r')
+
                 except:
                     pass
 
-        #
-        if not ((self.Aport or self.Bport) or self.joyPort):
-            print(debug['text'] + '\r'+ debug['space'] +"Nenašiel som žiadne porty s Axel doskami")
-            return
+            #
+            if not ((self.Aport or self.Bport) or self.joyPort):
+                print(debug['text'] + '\r'+ debug['space'] +"Nenašiel som žiadne porty s Axel doskami")
+                pass
 
     def mathAX2(self,_X, _Y, _Z):  # TODO niekedy optimalizovať
         """matika na výpočet uhlov z súradníc pre 2kĺbového robota + výpočet rotácie základne
@@ -298,10 +300,12 @@ class Axel():
         if debug['math']: print(debug['text'], str(gama), str(alfa), str(beta))
 
         # ukladanie uhlov
-        self.u1 = gama
-        self.u2 = alfa
-        self.u3 = beta
-        # -3689,7823,14682,25,90'
+        self.u1 = gama  # uhol základni (do ľavo, do prava)
+        self.u2 = alfa  # uhol na základni (hore, dole)
+        self.u3 = beta  # uhol zápestia (hore, dole)
+
+        #                      ↓↓ čas na pohyb v milisekundách
+        # -3689,7823,14682,25,500
 
     def cloSER(self):
         '''funkcia na uzatvaranie seriovích komunikácii... ano viem mohol som použiť build in funkcie
@@ -329,20 +333,40 @@ class Axel():
         # na čítanie a analýzu údajov z joy_ReadCOM.py bežiaceho v subprocese
         try:
             re = p1.stdout.readline().decode().rstrip().split(',')
-            re[0] = int(re[0]) - self.joyParametre['center']
-            re[1] = int(re[1]) - self.joyParametre['center']
-            re[3] = int(re[3]) - self.joyParametre['center']
-            re[4] = int(re[4]) - self.joyParametre['center']
+
+            rec = []
+
+            if re[0] == 'Axel':
+                CustomError("Arduino joy bolo reštartované")
+                return
+
+            rec[0] = int(int(re[0]) - self.joyParametre['center']) if (int(re[0]) > self.joyParametre['dead']) else None
+            rec[1] = int(int(re[1]) - self.joyParametre['center']) if (int(re[1]) > self.joyParametre['dead']) else None
+            rec[3] = int(int(re[3]) - self.joyParametre['center']) if (int(re[3]) > self.joyParametre['dead']) else None
+            rec[4] = int(int(re[4]) - self.joyParametre['center']) if (int(re[4]) > self.joyParametre['dead']) else None
+
+            if rec[0] is not None:
+                self.u1 += rec[0] / 2
+
+            if rec[1] is not None:
+                self.u1 += rec[0] / 2
+
+            if rec[3] is not None:
+                self.u1 += rec[0] / 2
+
+            if rec[4] is not None:
+                self.u1 += rec[0] / 2
+
             out = {
                     1:{
-                        'X' : re[0],
-                        'Y' : re[1],
-                        'SW' : re[2]
+                        'X' : int(re[0]),
+                        'Y' : int(re[1]),
+                        'SW' : int(re[2])
                     },
                     2:{
-                        'X' : re[3],
-                        'Y' : re[4],
-                        'SW' : re[5]
+                        'X' : int(re[3]),
+                        'Y' : int(re[4]),
+                        'SW' : int(re[5])
                     }
                 }
             self.rjoy = out
@@ -350,17 +374,26 @@ class Axel():
         except Exception as e:
             CustomError(e)
 
-    def sendAxel(self, ser, data):
+    def sendAxel(self, ser):
 
         rou = 100   # round
         space = "," # medzera aby to Arduino vedelo prečítať
 
+        # zostaviť sériové dáta
         serdata = str(int(round(self.u1, 2) * rou)) + space + str(int(round(self.u2, 2) * rou)) + space + str(
             int(round(self.u3, 2) * rou)) + space + str(int(round(self.u4, 2) / 180 * 100)) + space + str(500)
-        print(serdata)
+
+        #
+        if debug['0']:print(serdata)
+
+        #
         ser.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
         c = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
-        print(c)
+
+        if c == '1':print("pohyb dokon čený")
+
+        #
+        if debug['0']:print(c)
 
 
 class CustomError(Exception):
@@ -401,6 +434,9 @@ if __name__ == "__main__":
         while True:
             time.sleep(0.01)
             x = ar.readJOY()
+            print(x)
+
+            ar.sendAxel(ar.A)
             
 
     # očakáva Ctrl + C prerušenie programu
