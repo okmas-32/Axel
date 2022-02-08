@@ -13,9 +13,9 @@ debug = {
     'math':bool(0),
     'ini':bool(1),
     'fromser':bool(0),
-    'text':'\x1b[1;33;33m' + 'debug:' + '\x1b[0m', #hehe found coloring printout
+    'text':'\x1b[1;33;33m' + 'debug:' + '\x1b[0m',  # hehe found coloring printout
     'space':'\x1b[1;33;33m' + 'I ' + '\x1b[0m',
-    'gtext':'\33[92m' + 'I ' + '\33[0m',
+    'gtext':'\33[92m' + 'I ' + '\33[0m',            # green alebo good text
     'Error':'\x1b[1;30;41m' + '\tE ' + '\x1b[0m'
 }
 
@@ -304,8 +304,8 @@ class Axel():
         self.u2 = alfa  # uhol na základni (hore, dole)
         self.u3 = beta  # uhol zápestia (hore, dole)
 
-
-        # -3689,7823,14682,25,90'
+        #                      ↓↓ čas na pohyb v milisekundách
+        # -3689,7823,14682,25,500
 
     def cloSER(self):
         '''funkcia na uzatvaranie seriovích komunikácii... ano viem mohol som použiť build in funkcie
@@ -389,6 +389,8 @@ class Axel():
         #
         ser.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
         c = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
+
+        if c == '1':print("pohyb dokon čený")
 
         #
         if debug['0']:print(c)
