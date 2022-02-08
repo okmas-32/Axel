@@ -431,7 +431,6 @@ if __name__ == "__main__":
         #===============finnaly the while True loop
         while True:
             time.sleep(0.01)
-
             x = ar.readJOY()
             print(x)
 
