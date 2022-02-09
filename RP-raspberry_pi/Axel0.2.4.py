@@ -12,7 +12,7 @@ debug = {
     '0':bool(1),
     'math':bool(0),
     'ini':bool(1),
-    'fromser':bool(0),
+    'fromser':bool(0),                              # z sériového portu
     'text':'\x1b[1;33;33m' + 'debug:' + '\x1b[0m',  # hehe found coloring printout
     'space':'\x1b[1;33;33m' + 'I ' + '\x1b[0m',
     'gtext':'\33[92m' + 'I ' + '\33[0m',            # green alebo good text
@@ -56,15 +56,24 @@ class Axel():
         self.BParametre = {}
         self.joyParametre = {}
 
+        self.sendData = bool(1)
+
         #baud rate for all Arduinos
         self.baud_rate = baud_rate
 
         self.notAxel = [0]*5
 
+        self.spacer = ","               # medzera aby to Arduino vedelo prečítať
+
         self.X = 90
         self.Y = 90
         self.Z = 0
         self.rjoy = None
+
+        # toto mám iba na testovanie Arduina
+        #                      ↓↓ čas na pohyb v milisekundách
+        # -3689,7823,14682,25,500
+
         # self.mathAX2(self.X, self.Y, self.Z, 143, 96, 7)
         # self.inicializacia()
 
@@ -96,9 +105,9 @@ class Axel():
                         ArduinoPort.pop(len(ArduinoPort)-1)
                         ArduinoPort.pop(len(ArduinoPort)-1)
                         rou = 100
-                        space = ","
+                        spacer = ","
 
-                        serdata = str(int(round(self.u1,2)*rou)) + space + str(int(round(self.u2,2)*rou)) + space + str(int(round(self.u3,2)*rou)) + space + str(int(round(self.u4,2)/180*100)) + space + str(500)
+                        serdata = str(int(round(self.u1,2)*rou)) + spacer + str(int(round(self.u2,2)*rou)) + spacer + str(int(round(self.u3,2)*rou)) + spacer + str(int(round(self.u4,2)/180*100)) + spacer + str(500)
                         #note štvrtý uhol (uhol chnapaka/háku) je prepočítaný do % lebo neni potreba aby bol taký presný
                         #serdata = str(15)
                         print(serdata)
@@ -231,6 +240,7 @@ class Axel():
         # dlzka2 = 9.6
 
         # súradnice ktoré poslalo Arduino pri inicializácii
+
         Y -= self.AParametre['base'] + self.AParametre['waist']
         dlzka1 = self.AParametre['arm1']
         dlzka2 = self.AParametre['arm2'] + self.AParametre['tool']
@@ -304,8 +314,6 @@ class Axel():
         self.u2 = alfa  # uhol na základni (hore, dole)
         self.u3 = beta  # uhol zápestia (hore, dole)
 
-        #                      ↓↓ čas na pohyb v milisekundách
-        # -3689,7823,14682,25,500
 
     def cloSER(self):
         '''funkcia na uzatvaranie seriovích komunikácii... ano viem mohol som použiť build in funkcie
@@ -340,22 +348,28 @@ class Axel():
                 CustomError("Arduino joy bolo reštartované")
                 return
 
-            rec[0] = int(int(re[0]) - self.joyParametre['center']) if (int(re[0]) > self.joyParametre['dead']) else None
-            rec[1] = int(int(re[1]) - self.joyParametre['center']) if (int(re[1]) > self.joyParametre['dead']) else None
-            rec[3] = int(int(re[3]) - self.joyParametre['center']) if (int(re[3]) > self.joyParametre['dead']) else None
-            rec[4] = int(int(re[4]) - self.joyParametre['center']) if (int(re[4]) > self.joyParametre['dead']) else None
+            # už rovno pri zapisovaní hodnnôt kontrolujem či sú väčšie ako "dead zone" zadaný v arduine
+            rec[0] = int(int(re[0]) - self.joyParametre['center']) if (int(re[0]) > self.joyParametre['dead']) or (int(re[0]) < self.joyParametre['dead']*(-1)) else None
+            rec[1] = int(int(re[1]) - self.joyParametre['center']) if (int(re[1]) > self.joyParametre['dead']) or (int(re[0]) < self.joyParametre['dead']*(-1)) else None
+            rec[3] = int(int(re[3]) - self.joyParametre['center']) if (int(re[3]) > self.joyParametre['dead']) or (int(re[0]) < self.joyParametre['dead']*(-1)) else None
+            rec[4] = int(int(re[4]) - self.joyParametre['center']) if (int(re[4]) > self.joyParametre['dead']) or (int(re[0]) < self.joyParametre['dead']*(-1)) else None
 
+            # kontrolujem či niečo je v prečítaných dátach a ak ano tak polovičku z toho pri
             if rec[0] is not None:
                 self.u1 += rec[0] / 2
+                self.sendData = bool(0)
 
             if rec[1] is not None:
-                self.u1 += rec[0] / 2
+                self.u1 += rec[1] / 2
+                self.sendData = bool(0)
 
             if rec[3] is not None:
-                self.u1 += rec[0] / 2
+                self.u1 += rec[3] / 2
+                self.sendData = bool(0)
 
             if rec[4] is not None:
-                self.u1 += rec[0] / 2
+                self.u1 += rec[4] / 2
+                self.sendData = bool(0)
 
             out = {
                     1:{
@@ -375,13 +389,11 @@ class Axel():
             CustomError(e)
 
     def sendAxel(self, ser):
-
-        rou = 100   # round
-        space = "," # medzera aby to Arduino vedelo prečítať
+        rou = 100  # zaokruhlenie pri posielaní do sériového portu
 
         # zostaviť sériové dáta
-        serdata = str(int(round(self.u1, 2) * rou)) + space + str(int(round(self.u2, 2) * rou)) + space + str(
-            int(round(self.u3, 2) * rou)) + space + str(int(round(self.u4, 2) / 180 * 100)) + space + str(500)
+        serdata = str(int(round(self.u1, 2) * rou)) + self.spacer + str(int(round(self.u2, 2) * rou)) + self.spacer + str(
+            int(round(self.u3, 2) * rou)) + self.spacer + str(int(round(self.u4, 2) / 180 * 100)) + self.spacer + str(500)
 
         #
         if debug['0']:print(serdata)
@@ -390,10 +402,14 @@ class Axel():
         ser.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
         c = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
 
-        if c == '1':print("pohyb dokon čený")
+        if debug['0']: print(c)
 
-        #
-        if debug['0']:print(c)
+        # keď prečíta 1 reprezentujúcu "koniec pohybu" z arduina tak vypíše a zapíše do dát
+        if c == '1':
+            self.sendData = bool(1)
+            if debug['0']:print("pohyb dokon čený")
+            return
+
 
 
 class CustomError(Exception):
@@ -435,7 +451,8 @@ if __name__ == "__main__":
             time.sleep(0.01)
             x = ar.readJOY()
             print(x)
-
+            if not ar.sendData:
+                ar.sendAxel()
             ar.sendAxel(ar.A)
             
 
