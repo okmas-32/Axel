@@ -73,7 +73,8 @@ class Axel():
         self.notAxel = [0]*5
 
         self.spacer = ","               # medzera aby to Arduino vedelo prečítať
-        self.predInp = bool(0)
+        self.predInp = [None]*5
+
 
         self.X = 90
         self.Y = 90
@@ -382,7 +383,7 @@ class Axel():
 
             rec = []
 
-            if re[0] == 'Axel':  #
+            if re[0] == 'Axel':  # ak sa nejakým spôsobom reštartuje Arduino (vyhodí error)
                 CustomError("Arduino joy bolo reštartované")
                 return
 
@@ -394,12 +395,14 @@ class Axel():
             rec[3] = int(int(re[4]) - self.joyParametre['center']) if (int(re[4]) > self.joyParametre['dead']) or (int(re[0]) < self.joyParametre['dead']*(-1)) else None
 
             # čítanie externých tlačítiek
-            rec[4] = bool(re[5] if bool(re[5]) == True else None)
-            rec[5] = bool(re[6] if bool(re[6]) == True else None)
-            rec[6] = bool(re[7] if bool(re[7]) == True else None)
-            rec[7] = bool(re[8] if bool(re[8]) == True else None)
-            rec[8] = bool(re[9] if bool(re[9]) == True else None)
+            for i in range(5):
+                rec[i+4] = bool(re[i+5] if ((not self.predInp) and bool(re[i+5]) == True) else False)
+                self.predInp[i] = bool(re[i + 5])
 
+            #   rec[] = [
+            #           0-3: keď je poslaná hodnota väčšia ako "deadzone"(zadané Arduinom) tak uloží nie None hodnotu (v int)
+            #           4-8: keď poslaná hodnota je
+            #
 
             # kontrolujem či niečo je v prečítaných dátach a ak ano tak polovičku z toho pri
             if rec[0] is not None:
@@ -418,8 +421,7 @@ class Axel():
                 self.u1 += rec[4] / 2
                 self.sendData = bool(0)
 
-            # rozdelovanie dát
-            out = {
+            out = { # raw data z joysticku
                     1:{
                         'X' : int(re[0]),
                         'Y' : int(re[1]),
@@ -431,18 +433,16 @@ class Axel():
                         'SW' : int(re[5])
                     },
                     'SW':{
-                        1:int(re[5]),
-                        2:int(re[6]),
-                        3:int(re[7]),
-                        4:int(re[8]),
-                        5:int(re[9])
+                        1:bool(re[5]),
+                        2:bool(re[6]),
+                        3:bool(re[7]),
+                        4:bool(re[8]),
+                        5:bool(re[9])
                     }
                 }
 
             # ukladá dáta do lokálneho rjoy a vracia dáta
             self.rjoy = out
-
-
 
             time.sleep(0.05) # čakanie 50 miliseconds na ďaľší inpud (lebo Arduino posiela dáta každých 50 milisekúnd)
             return out
@@ -452,7 +452,7 @@ class Axel():
             CustomError(e)
 
     def sendAxel(self, ser):
-        rou = 100  # zaokruhlenie pri posielaní do sériového portu
+        rou = 100  # zaokruhlenie(pre posledné servo čiže chnapačky) / zjednodušenie(aby som nemusel posielať desatinné čísla) pri posielaní do sériového portu
 
         # zostaviť sériové dáta
         serdata = str(int(round(self.u1, 2) * rou)) + self.spacer + str(int(round(self.u2, 2) * rou)) + self.spacer + str(
@@ -465,6 +465,7 @@ class Axel():
         ser.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
         c = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
 
+        # debuug stuuuf
         if debug['0']: print(c)
 
         # keď prečíta 1 reprezentujúcu "koniec pohybu" z arduina tak vypíše a zapíše do dát
