@@ -73,6 +73,7 @@ class Axel():
         self.notAxel = [0]*5
 
         self.spacer = ","               # medzera aby to Arduino vedelo prečítať
+        self.predInp = bool(0)
 
         self.X = 90
         self.Y = 90
@@ -386,10 +387,19 @@ class Axel():
                 return
 
             # už rovno pri zapisovaní hodnnôt kontrolujem či sú väčšie ako "dead zone" zadaný v arduine
+            # note ignorujem dáta o switchoch na joysticku sú nepoužitelné lebo na ich stlačenie sa často stáva že sa pohne aj joystick.. používame radšej externé tlačítka na krabičke
             rec[0] = int(int(re[0]) - self.joyParametre['center']) if (int(re[0]) > self.joyParametre['dead']) or (int(re[0]) < self.joyParametre['dead']*(-1)) else None
             rec[1] = int(int(re[1]) - self.joyParametre['center']) if (int(re[1]) > self.joyParametre['dead']) or (int(re[0]) < self.joyParametre['dead']*(-1)) else None
-            rec[3] = int(int(re[3]) - self.joyParametre['center']) if (int(re[3]) > self.joyParametre['dead']) or (int(re[0]) < self.joyParametre['dead']*(-1)) else None
-            rec[4] = int(int(re[4]) - self.joyParametre['center']) if (int(re[4]) > self.joyParametre['dead']) or (int(re[0]) < self.joyParametre['dead']*(-1)) else None
+            rec[2] = int(int(re[3]) - self.joyParametre['center']) if (int(re[3]) > self.joyParametre['dead']) or (int(re[0]) < self.joyParametre['dead']*(-1)) else None
+            rec[3] = int(int(re[4]) - self.joyParametre['center']) if (int(re[4]) > self.joyParametre['dead']) or (int(re[0]) < self.joyParametre['dead']*(-1)) else None
+
+            # čítanie externých tlačítiek
+            rec[4] = bool(re[5] if bool(re[5]) == True else None)
+            rec[5] = bool(re[6] if bool(re[6]) == True else None)
+            rec[6] = bool(re[7] if bool(re[7]) == True else None)
+            rec[7] = bool(re[8] if bool(re[8]) == True else None)
+            rec[8] = bool(re[9] if bool(re[9]) == True else None)
+
 
             # kontrolujem či niečo je v prečítaných dátach a ak ano tak polovičku z toho pri
             if rec[0] is not None:
@@ -419,11 +429,22 @@ class Axel():
                         'X' : int(re[3]),
                         'Y' : int(re[4]),
                         'SW' : int(re[5])
+                    },
+                    'SW':{
+                        1:int(re[5]),
+                        2:int(re[6]),
+                        3:int(re[7]),
+                        4:int(re[8]),
+                        5:int(re[9])
                     }
                 }
 
             # ukladá dáta do lokálneho rjoy a vracia dáta
             self.rjoy = out
+
+
+
+            time.sleep(0.05) # čakanie 50 miliseconds na ďaľší inpud (lebo Arduino posiela dáta každých 50 milisekúnd)
             return out
 
         # zaobchádzanie s errorom
