@@ -19,23 +19,9 @@ debug = {
     'Error':'\x1b[1;30;41m' + '\tE ' + '\x1b[0m'
 }
 
-#TODO dorobiť data storage pre každé AR (ukladanie údajov pri inicializácii na neskorší výpočet)
-# https://www.youtube.com/watch?v=WOwi0h_-dfA
-
-#TODO spraviť cameru ktorá bude vedieť rozpoznať objekty/farby (Opencv knižnica)
-# https://youtu.be/Vi9Y9AL13Rc?t=366
-
-#TODO https://pypi.org/project/pyFirmata/
-
-# class arPort():
-#     def __init__(self, n, port, _baud_rate=baud_rate):
-#         self.name = n
-#         self.port = port
-#         self.parametre = []
-
 class CustomError(Exception):
     """my custom 'error handlerer' mainly due to coloring outpud/debug stuff but also it was funn tu setup"""
-    def __init__(self, Exception, i = None):
+    def __init__(self, Exception, i):
         if i != None:
             print('\r' + debug['space'] + str(Exception))
         else:
@@ -514,8 +500,7 @@ if __name__ == "__main__":
             ar.sendAxel(ar.A)
             
 
-    # očakáva Ctrl + C prerušenie programu
-    except KeyboardInterrupt:
+    except KeyboardInterrupt: # očakáva Ctrl + C prerušenie programu
         if debug['0'] and debug['ini']:
             print('\r' + debug['text'])
             print(debug['space'] + f'A arduino: {ar.A}')
@@ -529,14 +514,12 @@ if __name__ == "__main__":
             print(debug['space'] + f'joy arduino: {ar.joy}')
         sys.exit(1)
 
-    # očakáva akýkoľvek iný Error
     except Exception as e:
         ar.cloSER()
         raise CustomError(e)
         # print(f'\nExeption: ({e})')
 
-    # "čisté" ukončenie programu
-    finally:
+    finally:# "čisté" ukončenie programu
         ar.cloSER()
         if debug['0']:
             print('\r')
@@ -550,4 +533,18 @@ if __name__ == "__main__":
             print(debug['space'] + str(ar.joy))
             print(debug['space'] + str(ar.joyPort))
             print(debug['space'] + str(ar.joyParametre))
-        sys.exit(0)
+        sys.exit(0)# "čisté" ukončenie programu
+
+#TODO dorobiť data storage pre každé AR (ukladanie údajov pri inicializácii na neskorší výpočet)
+# https://www.youtube.com/watch?v=WOwi0h_-dfA
+
+#TODO spraviť cameru ktorá bude vedieť rozpoznať objekty/farby (Opencv knižnica)
+# https://youtu.be/Vi9Y9AL13Rc?t=366
+
+#TODO https://pypi.org/project/pyFirmata/
+
+# class arPort():
+#     def __init__(self, n, port, _baud_rate=baud_rate):
+#         self.name = n
+#         self.port = port
+#         self.parametre = []

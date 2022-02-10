@@ -17,7 +17,7 @@ postup:
 	wireless access point (wireless controll):
 		https://www.raspberryconnect.com/projects/65-raspberrypi-hotspot-accesspoints/158-raspberry-pi-auto-wifi-hotspot-switch-direct-connection
 		-ssid: AXEL_WiFi (2)
-		-pass: ScDmTBCIO
+		-pass: (take iste ako ssh heslo)
 
 	joistick (do budúcna):
 		https://iot-guider.com/raspberrypi/analog-joystick-module-in-raspberry-pi/attachment/interfacing-analog-joystick-module-in-raspberry-pi/
