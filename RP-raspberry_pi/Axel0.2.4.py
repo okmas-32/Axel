@@ -33,6 +33,15 @@ debug = {
 #         self.port = port
 #         self.parametre = []
 
+class CustomError(Exception):
+    """my custom 'error handlerer' mainly due to coloring outpud/debug stuff but also it was funn tu setup"""
+    def __init__(self, Exception, i = None):
+        if i != None:
+            print('\r' + debug['space'] + str(Exception))
+        else:
+            print('\r' + debug['space'] + debug['Error'] + str(Exception))
+        pass
+
 class Axel():
     def __init__(self):
         """tu si iba určím aké parametre bude držať objekt v classe Axel ako napr. port v ktorom je Arduino alebo dĺžku ramena ruky"""
@@ -138,94 +147,116 @@ class Axel():
         """funkcia na získanie portov v ktorých je Arduino a získanie dát z Arduina o samotnej ruke
         (funguje aj vo windowse☺)"""
         portEH = []
+
+        # prejde cez všetky porty ktoré mu dá serial.tools.list_ports knižnica
         for i, p in enumerate(ports):
+
+            # hodí ich do stringu, splitne a zoberie si prvú hodnotu z toho splitu (to býva ten prvý port)
             port = str(p)
             p = port.split(' ', 1)
             portEH.append(p[0])
+
+            # debuug
             if debug['0']:
                 print(str(i))
                 print(f'port: {port}')
-            if not portEH == self.notAxel[i]:
-                try:
-                    ser = serial.Serial(portEH[i], self.baud_rate, timeout=2)
-                    if ser.isOpen():
-                        ser.close()
-                    ser.open()
-                    x = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
-                    Ax = x.split(',')
-                    if not Ax[0] == 'Axel': self.notAxel = portEH
-                    if Ax[1] == 'Angie':
-                        if debug['0'] and debug['ini']: print(debug['gtext'] + f'{portEH[i]} Angie Arduino')
-                        self.A = ser
-                        ser.close()
-                        self.A.open()
-                        self.Aport = portEH[i]
-                        self.AParametre = {
-                            'name': str(Ax[1]),
-                            'base': int(Ax[2]),
-                            'waist':int(Ax[3]),
-                            'arm1': int(Ax[4]),
-                            'arm2': int(Ax[5]),
-                            'tool': int(Ax[6])
-                        }
-                    if Ax[1] == 'Bimbis:)':
 
-                        #
-                        if debug['0'] and debug['ini']: print(debug['gtext'] + '\33[5m'+ str(portEH[i])+ '\33[0m' +f' Bimbis Arduino') #skúšal som či sa nedá blikať s stringom ale očividne nie
-                        self.B = ser
-                        ser.close()
-                        self.B.open()
-                        self.Bport = portEH[i]
-                        self.BParametre = {
-                            'name': str(Ax[1]),
-                            'base': int(Ax[2]),
-                            'waist':int(Ax[3]),
-                            'arm1': int(Ax[4]),
-                            'arm2': int(Ax[5]),
-                            'tool': int(Ax[6])
-                        }
-                    if Ax[1] == 'joy':
 
-                        #
-                        if debug['0'] and debug['ini']: print(debug['gtext'] + f'{portEH[i]} joystick Arduino')
-                        ser.close()
-                        self.joy = ser
-                        # self.joy.open()
-                        self.joyPort = portEH[i]
-                        self.joyParametre = {
-                            'name':str(Ax[1]),
-                            'max':int(Ax[2]),
-                            'dead':int(Ax[3]),
-                            'center':int(int(Ax[2])/2)
-                        }
+            # skúsim celý ďalší block kódu kvôli errorom aby som ich vedel zachitiť a vypísať
+            try:
+                # zapnem sériovú komunikáciu s už upraveným portom v i poradí s timeoutom 2 lebo cca toľko trvá Arduinu kým sa zapne
+                ser = serial.Serial(portEH[i], self.baud_rate, timeout=2)
 
-                        # iniciuje proces 1 (p1) ako clobálne a dá mu dubprocess s python programom (joy_ReadCOM.py) + port a baud rate v ktorom pracujeme
-                        global p1
-                        p1 = subprocess.Popen(['python', './joy_ReadCOM.py', str(self.joyPort), str(self.baud_rate)],
-                                              stdin=subprocess.PIPE,
-                                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        # will print out if debug to check if the subprocess is working
-                        if debug['0'] and debug['ini']:
-                            for _ in range(10):
-                                rjoy = p1.stdout.readline().decode().rstrip()
-                                print(debug['gtext'] + f'joyAR says: {rjoy}')
+                # prečítam riadok z serioveho portu (po \n)
+                x = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
 
-                    else:  self.notAxel[i] = portEH
+                # splitnem to s ","
+                Ax = x.split(',')
 
-                    #
+                #if not Ax[0] == 'Axel': self.notAxel = portEH
+
+                if Ax[1] == 'Angie': # ak poslalo Arduino v riadku druhé (za ",") angie tak :
+
+                    # vypíšem debuuug že som našiel na "tomto" porte Angie
+                    if debug['0'] and debug['ini']: print(debug['gtext'] + f'{portEH[i]} Angie Arduino')
+
+                    # uloźím seriový port (zavriem ten starý otvorým ten nový), port (ako text) a samotné parametre
+                    # danej ruky (všetky dĺžky a meno)
+                    self.A = ser
+                    ser.close()
+                    self.A.open()
+                    self.Aport = portEH[i]
+                    self.AParametre = {
+                        'name': str(Ax[1]),
+                        'base': int(Ax[2]),
+                        'waist':int(Ax[3]),
+                        'arm1': int(Ax[4]),
+                        'arm2': int(Ax[5]),
+                        'tool': int(Ax[6])
+                    }
+                if Ax[1] == 'Bimbis:)': # ak je Bimbis tak spravím to isté ako pri Angie (lebo oboje sú ruky)
+                    if debug['0'] and debug['ini']: print(debug['gtext'] + str(portEH[i])+f' Bimbis Arduino')
+                    self.B = ser
+                    ser.close()
+                    self.B.open()
+                    self.Bport = portEH[i]
+                    self.BParametre = {
+                        'name': str(Ax[1]),
+                        'base': int(Ax[2]),
+                        'waist':int(Ax[3]),
+                        'arm1': int(Ax[4]),
+                        'arm2': int(Ax[5]),
+                        'tool': int(Ax[6])
+                    }
+                if Ax[1] == 'joy': # ak Arduino pošle že je joystick
+
+                    # debuuuug
+                    if debug['0'] and debug['ini']: print(debug['gtext'] + f'{portEH[i]} joystick Arduino')
+
+                    # spravím to isté ako pri rukách len neotvorím nový port lebo bude otvorený pri subprocesse
+                    ser.close()
+                    self.joy = ser
+                    # self.joy.open()
+                    self.joyPort = portEH[i]
+
+                    # uložím parametre ako maximum a "hluchú zónu" (nazval som to dead) ktorú pošle Arduino (center si vypočítam z max)
+                    self.joyParametre = {
+                        'name':str(Ax[1]),
+                        'max':int(Ax[2]),
+                        'dead':int(Ax[3]),
+                        'center':int(int(Ax[2])/2)
+                    }
+
+                    # iniciuje proces 1 (p1) ako clobálne a dá mu dubprocess s python programom (joy_ReadCOM.py) + port a baud rate v ktorom pracujeme
+                    global p1
+                    p1 = subprocess.Popen(['python', './joy_ReadCOM.py', str(self.joyPort), str(self.baud_rate)],
+                                          stdin=subprocess.PIPE,
+                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+                    # keď je debug zapnutý tak vypíše 10 riadkov z subprocessu čo prečítal (proste či to ide)
                     if debug['0'] and debug['ini']:
-                        print(debug['gtext'] + str(Ax))
-                        print('------------------------\r')
+                        for _ in range(10):
+                            rjoy = p1.stdout.readline().decode().rstrip()
+                            print(debug['gtext'] + f'joyAR says: {rjoy}')
 
-                except:
-                    pass
+                else:  self.notAxel[i] = portEH
 
-            #
+                # debuuuugu
+                if debug['0'] and debug['ini']:
+                    print(debug['gtext'] + str(Ax))
+                    print('------------------------\r')
+
+            # vypíšem Error ak nejaký nastane.. a pokračuje xd
+            except Exception as e:
+                CustomError(e)
+                pass
+
+            # keď nenájde žiadne Arduina s Axelom
             if not ((self.Aport or self.Bport) or self.joyPort):
                 print(debug['text'] + '\r'+ debug['space'] +"Nenašiel som žiadne porty s Axel doskami")
                 pass
 
-    def mathAX2(self,_X, _Y, _Z):  # TODO niekedy optimalizovať
+    def mathAX2(self,_X, _Y, _Z, base, waist, arm1, arm2, tool):  # TODO niekedy optimalizovať
         """matika na výpočet uhlov z súradníc pre 2kĺbového robota + výpočet rotácie základne
          s Z (roboj je v zmysle že je položený a pracovnú plochu má okolo seba)"""
         X = _X
@@ -241,9 +272,12 @@ class Axel():
 
         # súradnice ktoré poslalo Arduino pri inicializácii
 
-        Y -= self.AParametre['base'] + self.AParametre['waist']
-        dlzka1 = self.AParametre['arm1']
-        dlzka2 = self.AParametre['arm2'] + self.AParametre['tool']
+        # znížim Y o celú základňu
+        Y -= base + waist
+
+        # vypočítam si dĺžky na výpočet matematiky
+        dlzka1 = arm1
+        dlzka2 = arm2 + tool
 
         # skontrolovanie či sú všetky súradnice v dosahu ak nie tak ich prepíše na najbližšie v dosahu
         #TODO spraiviť dosah automaticky vypočítaný nie manuálne napísaný
@@ -297,7 +331,7 @@ class Axel():
             print(f'\tXb= {Xb}')
             print(f'\tYb= {Yb}')
 
-        # finnal math
+        # konečná matematika
         alfa = degrees(atan2(Yb, Xb))
         beta_ = degrees(atan2(Y - Yb, X - Xb))  #nemam tucha prečo ale musí to byť takto s beta_ lebo inak to dáva iné divné čísla
         beta =  beta_ - alfa + 180
@@ -310,14 +344,15 @@ class Axel():
         if debug['math']: print(debug['text'], str(gama), str(alfa), str(beta))
 
         # ukladanie uhlov
-        self.u1 = gama  # uhol základni (do ľavo, do prava)
-        self.u2 = alfa  # uhol na základni (hore, dole)
-        self.u3 = beta  # uhol zápestia (hore, dole)
+        self.u1 = gama  # uhol základni (pohyb : do ľava, do prava)
+        self.u2 = alfa  # uhol na základni (pohyb : hore, dole)
+        self.u3 = beta  # uhol zápestia (pohyb : hore, dole)
 
 
     def cloSER(self):
-        '''funkcia na uzatvaranie seriovích komunikácii... ano viem mohol som použiť build in funkcie
-        __enter__ a __exit__ ale bolo málo času'''
+        """funkcia na uzatvaranie seriovích komunikácii... ano viem mohol som použiť build in funkcie
+        __enter__ a __exit__ ale bolo málo času"""
+
         self.A.close()
         self.B.close()
         self.joy.close()
@@ -339,12 +374,14 @@ class Axel():
         #     print(x)
 
         # na čítanie a analýzu údajov z joy_ReadCOM.py bežiaceho v subprocese
+
         try:
+            # prečíta riadok z subprocessu
             re = p1.stdout.readline().decode().rstrip().split(',')
 
             rec = []
 
-            if re[0] == 'Axel':
+            if re[0] == 'Axel':  #
                 CustomError("Arduino joy bolo reštartované")
                 return
 
@@ -371,6 +408,7 @@ class Axel():
                 self.u1 += rec[4] / 2
                 self.sendData = bool(0)
 
+            # rozdelovanie dát
             out = {
                     1:{
                         'X' : int(re[0]),
@@ -383,8 +421,12 @@ class Axel():
                         'SW' : int(re[5])
                     }
                 }
+
+            # ukladá dáta do lokálneho rjoy a vracia dáta
             self.rjoy = out
             return out
+
+        # zaobchádzanie s errorom
         except Exception as e:
             CustomError(e)
 
@@ -395,10 +437,10 @@ class Axel():
         serdata = str(int(round(self.u1, 2) * rou)) + self.spacer + str(int(round(self.u2, 2) * rou)) + self.spacer + str(
             int(round(self.u3, 2) * rou)) + self.spacer + str(int(round(self.u4, 2) / 180 * 100)) + self.spacer + str(500)
 
-        #
+        # debuuuuug
         if debug['0']:print(serdata)
 
-        #
+        # samotné posielanie dát
         ser.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
         c = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
 
@@ -411,37 +453,31 @@ class Axel():
             return
 
 
-
-class CustomError(Exception):
-    """my custom 'error handlerer' mainly due to coloring outpud/debug stuff but also it was funn tu setup"""
-    def __init__(self, Exception, i = None):
-        if i != None:
-            print('\r' + debug['space'] + str(Exception))
-        else:
-            print('\r' + debug['space'] + debug['Error'] + str(Exception))
-        pass
-
-
 # toto pôjde jedine ak to je spustené ako main program
 if __name__ == "__main__":
+
+    # spravý prvú inicializáciu všetkých premenných
     ar = Axel()
+
+    # spravyť prvý list portov
     portsini = list(serial.tools.list_ports.comports())
     try:
-        # will make first inicialization of its environment
+        # spravý prvú inicializáciu Axelovských Arduín
         ar.ini(portsini)
 
-        # will do only if anny of Arduinos arnt connected
-        while not ((ar.Aport and ar.Bport) and ar.joyPort):
+        # hľadá Arduína kým sú neni pripojené všetky
+        while not ((ar.Aport and ar.Bport) and ar.joyPort): # počká sekundu potom skontroluje či sú nové porty ak tak skontroluje či sú to Arduiná s Axelom
 
-            # and it will sleep for sec. then check if are anny new devices connected then check if ther are Axel bords
             time.sleep(1)
             print("čakám na pripojenie Arduín")
             ports = list(serial.tools.list_ports.comports())
+
+            # debug stuuf (keď nenájde žiadne porty)
             if not ports:
                 raise CustomError("Nenašiel som žiadne porty na hľadanie Axela", 1)
                 pass
             if portsini != ports:
-                ar.ini(ports)  # moest important peace of code
+                ar.ini(ports)  # kontrola či sú nové Arduína Axely
                 portsini = ports
 
 
