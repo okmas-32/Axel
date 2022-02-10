@@ -103,6 +103,7 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
 int counter = 0;
 int lastIndex = 0;
 
+//  -3689,7823,14682,25,500
 void loop() {//========================================loop
   while (Serial.available() > 0) {
     

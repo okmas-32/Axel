@@ -21,7 +21,7 @@ debug = {
 
 class CustomError(Exception):
     """my custom 'error handlerer' mainly due to coloring outpud/debug stuff but also it was funn tu setup"""
-    def __init__(self, Exception, i):
+    def __init__(self, Exception, i = None):
         if i != None:
             print('\r' + debug['space'] + str(Exception))
         else:
@@ -56,7 +56,7 @@ class Axel():
         #baud rate for all Arduinos
         self.baud_rate = baud_rate
 
-        self.notAxel = [0]*5
+        self.notAxel = []
 
         self.spacer = ","               # medzera aby to Arduino vedelo prečítať
         self.predInp = [None]*5
@@ -137,8 +137,9 @@ class Axel():
         portEH = []
 
         # prejde cez všetky porty ktoré mu dá serial.tools.list_ports knižnica
-        for i, p in enumerate(ports):
+        for i, p in enumerate(reversed(ports)):
 
+            x = None
             # hodí ich do stringu, splitne a zoberie si prvú hodnotu z toho splitu (to býva ten prvý port)
             port = str(p)
             p = port.split(' ', 1)
@@ -149,21 +150,18 @@ class Axel():
                 print(str(i))
                 print(f'port: {port}')
 
+            ser = serial.Serial(portEH[i], self.baud_rate, timeout=2)
 
-            # skúsim celý ďalší block kódu kvôli errorom aby som ich vedel zachitiť a vypísať
+            if ser.isOpen():
+                ser.close()
+            ser.open()
+
             try:
-                # zapnem sériovú komunikáciu s už upraveným portom v i poradí s timeoutom 2 lebo cca toľko trvá Arduinu kým sa zapne
-                ser = serial.Serial(portEH[i], self.baud_rate, timeout=2)
-
-                # prečítam riadok z serioveho portu (po \n)
                 x = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
 
-                # splitnem to s ","
                 Ax = x.split(',')
 
-                #if not Ax[0] == 'Axel': self.notAxel = portEH
-
-                if Ax[1] == 'Angie': # ak poslalo Arduino v riadku druhé (za ",") angie tak :
+                if Ax[1] == 'Angie' or not self.A.isOpen(): # ak poslalo Arduino v riadku druhé (za ",") angie tak :
 
                     # vypíšem debuuug že som našiel na "tomto" porte Angie
                     if debug['0'] and debug['ini']: print(debug['gtext'] + f'{portEH[i]} Angie Arduino')
@@ -182,7 +180,7 @@ class Axel():
                         'arm2': int(Ax[5]),
                         'tool': int(Ax[6])
                     }
-                if Ax[1] == 'Bimbis:)': # ak je Bimbis tak spravím to isté ako pri Angie (lebo oboje sú ruky)
+                if Ax[1] == 'Bimbis:)' or not self.B.isOpen(): # ak je Bimbis tak spravím to isté ako pri Angie (lebo oboje sú ruky)
                     if debug['0'] and debug['ini']: print(debug['gtext'] + str(portEH[i])+f' Bimbis Arduino')
                     self.B = ser
                     ser.close()
@@ -196,7 +194,7 @@ class Axel():
                         'arm2': int(Ax[5]),
                         'tool': int(Ax[6])
                     }
-                if Ax[1] == 'joy': # ak Arduino pošle že je joystick
+                if Ax[1] == 'joy' or not self.joy.isOpen(): # ak Arduino pošle že je joystick
 
                     # debuuuug
                     if debug['0'] and debug['ini']: print(debug['gtext'] + f'{portEH[i]} joystick Arduino')
@@ -226,17 +224,18 @@ class Axel():
                         for _ in range(10):
                             rjoy = p1.stdout.readline().decode().rstrip()
                             print(debug['gtext'] + f'joyAR says: {rjoy}')
-
-                else:  self.notAxel[i] = portEH
-
-                # debuuuugu
+                            # debuuuugu
                 if debug['0'] and debug['ini']:
                     print(debug['gtext'] + str(Ax))
                     print('------------------------\r')
 
+                else:
+                    self.notAxel.append(portEH)
+                    pass
+
             # vypíšem Error ak nejaký nastane.. a pokračuje xd
             except Exception as e:
-                CustomError(e)
+                CustomError(e,0)
                 pass
 
             # keď nenájde žiadne Arduina s Axelom
@@ -384,6 +383,8 @@ class Axel():
             for i in range(5):
                 rec[i+4] = bool(re[i+5] if ((not self.predInp) and bool(re[i+5]) == True) else False)
                 self.predInp[i] = bool(re[i + 5])
+                print(rec[i+4])
+                print(self.predInp[i])
 
             #   rec[] = [
             #           0-3: keď je poslaná hodnota väčšia ako "deadzone"(zadané Arduinom) tak uloží nie None hodnotu (v int)
@@ -467,8 +468,11 @@ if __name__ == "__main__":
     # spravý prvú inicializáciu všetkých premenných
     ar = Axel()
 
-    # spravyť prvý list portov
-    portsini = list(serial.tools.list_ports.comports())
+    portsini = []
+
+    for port, _, _ in sorted(serial.tools.list_ports.comports()):
+        portsini.append(port)
+
     try:
         # spravý prvú inicializáciu Axelovských Arduín
         ar.ini(portsini)
@@ -481,7 +485,7 @@ if __name__ == "__main__":
             ports = list(serial.tools.list_ports.comports())
 
             # debug stuuf (keď nenájde žiadne porty)
-            if not ports:
+            if not portsini:
                 raise CustomError("Nenašiel som žiadne porty na hľadanie Axela", 1)
                 pass
             if portsini != ports:
@@ -496,9 +500,10 @@ if __name__ == "__main__":
             x = ar.readJOY()
             print(x)
             if not ar.sendData:
-                ar.sendAxel()
-            ar.sendAxel(ar.A)
-            
+                ar.sendAxel(ar.A)
+
+            # if (not ar.sendData) and :
+            #     ar.sendAxel(ar.B)
 
     except KeyboardInterrupt: # očakáva Ctrl + C prerušenie programu
         if debug['0'] and debug['ini']:

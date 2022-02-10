@@ -15,17 +15,13 @@ try:
     ser.readline()
 
     #napíšem mu 1 aby začal s posielaním dát o joisticku
-    ser.write(b'1\r\n')
+    ser.write(b'A\r\n')
 
     #čítam dáta ktoré posiela
     while True:  # The program never ends... will be killed when master is over.
         output = ser.readline().decode('utf-8') # read output
         sys.stdout.write(output) # write output to stdout
         sys.stdout.flush()
-
-
-
-
 
 except Exception as e:
     #ak je nejaký eror tak ho iba vypíše do "výstupu" tohoto bloku kódu

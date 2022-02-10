@@ -109,9 +109,7 @@ void loop() {//=============================================loop
     
     if (rec == '\n') {
       
-      if (debug) {
-        Serial.println("------------------"); Serial.print(debugs); Serial.println("inpud: ");
-      }
+      if (debug) {Serial.println("------------------"); Serial.print(debugs); Serial.println("inpud: ");}
       
       for (int i = 0; i < input.length(); i++) {
         
@@ -128,9 +126,7 @@ void loop() {//=============================================loop
           
           lastIndex = i + 1;
           
-          if (debug) {
-            Serial.print(debugs + " "); Serial.println(uhol[counter] + spa);
-          }
+          if (debug) {Serial.print(debugs + " "); Serial.println(uhol[counter] + spa);}
           
           counter++;
         }
@@ -138,9 +134,7 @@ void loop() {//=============================================loop
         else if (input.length() == i + 1) {             // posledný block (milisekundy) nemajú za sebou "," tak tie musím zapísať od posledného zápisu po koniec dátového blocku
           milis = input.substring(lastIndex, i + 1).toInt();
           
-          if (debug) {
-            Serial.print(debugs + " milis: "); Serial.println(milis);
-          }
+          if (debug) {Serial.print(debugs + " milis: "); Serial.println(milis);}
         }
         
       }
@@ -151,6 +145,7 @@ void loop() {//=============================================loop
       lastIndex = 0;
       rec = "";
       ndone = true;
+      if (debug) {Serial.print('\n');}
     }
     
     else {

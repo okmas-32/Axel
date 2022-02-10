@@ -67,14 +67,12 @@ void loop() {
     Serial.print(analogRead(VRx1));
     Serial.print(",");Serial.print(analogRead(VRy1));
     Serial.print(",");Serial.print(!digitalRead(SW1));
-    Serial.print(",");
     
     // Joystick 2:
-    Serial.print(analogRead(VRx2));
+    Serial.print(",");Serial.print(analogRead(VRx2));
     Serial.print(",");Serial.print(analogRead(VRy2));
     Serial.print(",");Serial.print(!digitalRead(SW2));
-    Serial.print(",");
-
+    
     // tlačítka
     Serial.print(",");Serial.print(!digitalRead(SW3));
     Serial.print(",");Serial.print(!digitalRead(SW4));
