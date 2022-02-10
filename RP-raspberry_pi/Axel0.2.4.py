@@ -224,7 +224,8 @@ class Axel():
                         for _ in range(10):
                             rjoy = p1.stdout.readline().decode().rstrip()
                             print(debug['gtext'] + f'joyAR says: {rjoy}')
-                            # debuuuugu
+
+
                 if debug['0'] and debug['ini']:
                     print(debug['gtext'] + str(Ax))
                     print('------------------------\r')
