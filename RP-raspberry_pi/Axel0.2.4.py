@@ -59,7 +59,7 @@ class Axel():
         self.notAxel = []
 
         self.spacer = ","               # medzera aby to Arduino vedelo prečítať
-        self.predInp = [None]*5
+        self.predInp = []
 
 
         self.X = 90
@@ -140,6 +140,7 @@ class Axel():
         for i, p in enumerate(reversed(ports)):
 
             x = None
+
             # hodí ich do stringu, splitne a zoberie si prvú hodnotu z toho splitu (to býva ten prvý port)
             port = str(p)
             p = port.split(' ', 1)
@@ -336,7 +337,6 @@ class Axel():
         self.u2 = alfa  # uhol na základni (pohyb : hore, dole)
         self.u3 = beta  # uhol zápestia (pohyb : hore, dole)
 
-
     def cloSER(self):
         """funkcia na uzatvaranie seriovích komunikácii... ano viem mohol som použiť build in funkcie
         __enter__ a __exit__ ale bolo málo času"""
@@ -387,10 +387,9 @@ class Axel():
                 print(rec[i+4])
                 print(self.predInp[i])
 
-            #   rec[] = [
+            #  rec[] = [
             #           0-3: keď je poslaná hodnota väčšia ako "deadzone"(zadané Arduinom) tak uloží nie None hodnotu (v int)
             #           4-8: keď poslaná hodnota je
-            #
 
             # kontrolujem či niečo je v prečítaných dátach a ak ano tak polovičku z toho pri
             if rec[0] is not None:
@@ -500,7 +499,7 @@ if __name__ == "__main__":
             time.sleep(0.01)
             x = ar.readJOY()
             print(x)
-            if not ar.sendData:
+            if (not ar.sendData) and ar.predInp[0]:
                 ar.sendAxel(ar.A)
 
             # if (not ar.sendData) and :
