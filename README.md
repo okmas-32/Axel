@@ -15,9 +15,9 @@ how i set up Raspberry pi and its hotspot in RP_info.txt
 
 python code works on linux and on windows (i dont know about mack)
 
-how [`Angie`](/3D_models/Angie V1/Angie.jpg) looks like :raised_hand_with_fingers_splayed:
+how [`Angie`](/3D_models/Angie_V1/Angie.jpg) looks like :raised_hand_with_fingers_splayed:
 
-how [`Bimbis`](/3D_models/Bimbis V2/Bimbis.jpg) looks like :mechanical_arm:
+how [`Bimbis`](/3D_models/Bimbis_V2/Bimbis.jpg) looks like :mechanical_arm:
 
 ---
 
