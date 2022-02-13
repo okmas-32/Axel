@@ -1,7 +1,7 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
-#define debugb true
+#define debugb false
 
 #define serStart "Axel,Bimbis:),"
 #define space ","

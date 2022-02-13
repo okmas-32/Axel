@@ -47,9 +47,9 @@ class Axel():
         self.joy = serial.Serial()      # ser. pre joystick ale aj tak sa nepoužíva lebo ho zapína subprocess
 
         #ports in string
-        self.Aport = ""
-        self.Bport = ""
-        self.joyPort = ""
+        self.Aport = None
+        self.Bport = None
+        self.joyPort = None
 
         #parameters in dictionary
         self.AParametre = {}
@@ -167,7 +167,7 @@ class Axel():
 
                 Ax = x.split(',')
 
-                if Ax[1] == 'Angie' or not self.A.isOpen(): # ak poslalo Arduino v riadku druhé (za ",") angie tak :
+                if Ax[1] == 'Angie': # ak poslalo Arduino v riadku druhé (za ",") angie tak :
 
                     # vypíšem debuuug že som našiel na "tomto" porte Angie
                     if debug['0'] and debug['ini']: print(debug['gtext'] + f'{portEH[i]} Angie Arduino')
@@ -186,7 +186,7 @@ class Axel():
                         'arm2': int(Ax[5]),
                         'tool': int(Ax[6])
                     }
-                if Ax[1] == 'Bimbis:)' or not self.B.isOpen(): # ak je Bimbis tak spravím to isté ako pri Angie (lebo oboje sú ruky)
+                if Ax[1] == 'Bimbis:)': # ak je Bimbis tak spravím to isté ako pri Angie (lebo oboje sú ruky)
                     if debug['0'] and debug['ini']: print(debug['gtext'] + str(portEH[i])+f' Bimbis Arduino')
                     self.B = ser
                     ser.close()
@@ -200,7 +200,8 @@ class Axel():
                         'arm2': int(Ax[5]),
                         'tool': int(Ax[6])
                     }
-                if Ax[1] == 'joy' or not self.joy.isOpen(): # ak Arduino pošle že je joystick
+
+                if Ax[1] == 'joy': # ak Arduino pošle že je joystick
 
                     # debuuuug
                     if debug['0'] and debug['ini']: print(debug['gtext'] + f'{portEH[i]} joystick Arduino')
