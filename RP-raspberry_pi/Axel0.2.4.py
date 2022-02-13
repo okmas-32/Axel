@@ -1,9 +1,10 @@
 import subprocess
 import sys
 import serial
-import serial.tools.list_ports
+import serial.tools.list_ports      # python -m serial.tools.list_ports -v
 import time
 import locale
+import asyncio
 from math import sqrt, atan2, degrees, atan
 
 baud_rate = 115200
@@ -20,7 +21,11 @@ debug = {
 }
 
 class CustomError(Exception):
-    """my custom 'error handlerer' mainly due to coloring outpud/debug stuff but also it was funn tu setup"""
+    #"""my custom 'error handlerer' mainly due to coloring outpud/debug stuff but also it was funn tu setup"""
+    """môj vlastný error handler.. spravil som ho hľavne kvôli tomu aby som vedel zachitiť errori ale aj kvôli tomu že to bola sranda naprogramovať"""
+
+    # zachitím error a vypíšem ho bez toho aby som musel zastaviť celí program a robiť odznova celú inicializáciu a podobne
+    # teda ak je to error ktorý som schopný obýsť.. ak to je niečo fatálnejšie tak to crashne celé
     def __init__(self, Exception, i = None):
         if i != None:
             print('\r' + debug['space'] + str(Exception))
@@ -438,7 +443,9 @@ class Axel():
         except Exception as e:
             CustomError(e)
 
-    def sendAxel(self, ser):
+    async def sendAxel(self, ser):
+        """táto funkcia slúži na zasielanie uhlov a času za ktorý sa majú servá pohnúť do Axel Arduina"""
+
         rou = 100  # zaokruhlenie(pre posledné servo čiže chnapačky) / zjednodušenie(aby som nemusel posielať desatinné čísla) pri posielaní do sériového portu
 
         # zostaviť sériové dáta
@@ -450,7 +457,7 @@ class Axel():
 
         # samotné posielanie dát
         ser.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
-        c = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
+        c = await ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
 
         # debuug stuuuf
         if debug['0']: print(c)

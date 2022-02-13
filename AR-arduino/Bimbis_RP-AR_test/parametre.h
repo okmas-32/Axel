@@ -1,7 +1,7 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
-#define debugb false
+#define debugb true
 
 #define serStart "Axel,Bimbis:),"
 #define space ","
@@ -27,5 +27,9 @@
 #define sr3 6   // "twins" normal twin
 #define sr4 9
 #define sr5 11  // tool: 140-180°
+
+// maximum a minimum pre posledné servo
+#define sr5mx 180
+#define sr5mi 140
 
 #endif

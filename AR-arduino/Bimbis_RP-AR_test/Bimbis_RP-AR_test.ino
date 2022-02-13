@@ -1,14 +1,26 @@
 #include "parametre.h"
 #include <Servo.h>
 
+/*
+ * všetko dôležité je vysvetlené v Angie kóde.. tu sú len špecificné veci 
+ * ktoré Angie kód nemá vysvetlené.. ostatné je to isté
+ * 
+ * môžete si pozrieť celí projekt a dokoumentáciu na https://github.com/okmas-32/Axel
+ * 
+ */
+
 Servo servo[5];
 #define NUM_SERVOS (sizeof(servo) / sizeof(Servo))
 const int sernum = NUM_SERVOS;
+
 const byte pinsetup[] = {sr1, sr2, sr3, sr4, sr5};
-int maxx = 180;
 String spa = space;
 String input = "";
 bool debug = debugb;
+/* 
+ * ak kód nefunguje keď je zapojený do počítaču kde beží Axel Python program 
+ * tak skontroluj či v parametroch neni debug daný na true.. to neočakáva Python 
+ */
 String debugs = "debug:";
 
 float uhol[4] = {0, 0, 0, 0};
@@ -35,52 +47,50 @@ void setup() {//========================================setup
 }
 
 
-//---------------------------------------------------------------------------
-// nezabudni na to že pohyb na základni sú 2 servá
-//  -3689,7823,14682,25,500
-
 bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int alfan, int special = 0) {
   digitalWrite(LED_BUILTIN, HIGH);
-  int cas = _cas;                   // zadaný čas na pohyb
-  long t = special;                 // čas od začiatku pohybu
+  int cas = _cas;
+  long t = 0;
 
   float uh[betan];
-  int oneskorenie = 19;             // pauza medzi intervalmi posielania uhlu do serva 
+  int oneskorenie = 19;
 
-  aktMill = millis();               // potrebujeme kontrolovať aktuálne milisekundy v Arduine
-  long predMill = aktMill;          // potrebujeme vedieť v ktorých milisekundách bola posledná akcia
-  long predMillt = aktMill;         // pre výpočet
+  aktMill = millis();
+  long predMill = aktMill;
+  long predMillt = aktMill;
 
   while (cas >= (aktMill - predMill)) {
 
-    for (int i = 0; i < betan ; i++) { // loopnem cez všetky uhly a vypočítam ich increment
+    for (int i = 0; i < betan ; i++) { 
       t += aktMill - predMillt;
       uh[i] = _alfa[i] + (((_beta[i] - _alfa[i]) / cas) * t );
       predMillt = aktMill;
     }
-    aktMill = millis();             // stále potrebujeme aktualizovať aktMill  aby sme vedeli aké sú aktuálne milisekundy
+    
+    aktMill = millis();
 
-    if ((aktMill - predMill) >= oneskorenie) { // ak sú aktuálne milisekundy mínus predošlé milisekundy väčšie alebo rovné oneskoreniu
+    if ((aktMill - predMill) >= oneskorenie) {
 
       for (int i = 0; i < betan; i++) {
         if (t > cas) {
           uh[i] = uhol[i];
         }
 
-        if (i == 1){ // toto musím spraviť kvôli "angry twin" servu
+        // toto musím spraviť kvôli "angry twin" servu
+        if (i == 1){ 
           servo[i].write(180-uh[i]);
+          if (debug) {Serial.print("SPECIAL SERVO: ");Serial.println(180-uh[i]);}
           i++;
           servo[i].write(uh[i]);
-          Serial.print("SPECIAL SERVO: ");Serial.println(180-uh[i]);
         }
         else{
           servo[i].write(uh[i]);
-          Serial.print("normal SERVO: ");Serial.println(uh[i]);
+          if (debug) {Serial.print("normal SERVO: ");Serial.println(uh[i]);}
         }
         
         if (debug) {
-          Serial.print(debugs); Serial.print("t: "); Serial.println(t); // ser.write(uh);
-          Serial.print(debugs); Serial.print("UH: "); Serial.print(i + " "); Serial.println(uh[i]);
+          Serial.print(debugs); Serial.print("t: ");Serial.println(t); // ser.write(uh);
+          Serial.print(debugs); Serial.print("UH: ");Serial.println(uh[i]);
         }
       }
       predMill = aktMill;
@@ -103,25 +113,22 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
 int counter = 0;
 int lastIndex = 0;
 
-//  -3689,7823,14682,25,500
 void loop() {//========================================loop
   while (Serial.available() > 0) {
-    
     char rec = Serial.read();
-    
     if (rec == '\n') {
-    
+      
       if (debug) {Serial.println("------------------"); Serial.print(debugs); Serial.println("inpud: ");}
       
       for (int i = 0; i < input.length(); i++) {
-        if (input.substring(i, i + 1) == ",") {         // hľadám "," o jeden dopredu
+        if (input.substring(i, i + 1) == ",") {
           uhol[counter] = input.substring(lastIndex, i).toFloat() / 100;
           
-          if (counter == 3) {                           //pre posledný uhol ktorý je v %
+          if (counter == 3) {
             uhol[counter] = uhol[counter] * 180;
           }
           
-          if (counter == 2) {                           //kvôli 3mu servu lebo je v hardweare opačne
+          if (counter == 2) {
             uhol[counter] = +(uhol[counter] - 180);
           }
           
@@ -132,13 +139,12 @@ void loop() {//========================================loop
           counter++;
         }
         
-        else if (input.length() == i + 1) {             // posledný block (milisekundy) nemajú za sebou "," tak tie musím zapísať od posledného zápisu po koniec dátového blocku
+        else if (input.length() == i + 1) {
           milis = input.substring(lastIndex, i + 1).toInt();
           
           if (debug) {Serial.print(debugs + " milis: "); Serial.println(milis);}
         }
       }
-      //Serial.println(uhol[0] + spa + uhol[1] + spa + uhol[2] + spa + uhol[3] + spa + milis);
       input = "";
       counter = 0;
       lastIndex = 0;
@@ -155,11 +161,7 @@ void loop() {//========================================loop
   
   if (loo and ndone) {
     movMe(servo, uhol, (sizeof(uhol) / 2) / 2, milis, beta, (sizeof(beta) / 2) / 2);
-    //movMe(servo, uhol, (sizeof(uhol) / 2) / 2, milis, beta, (sizeof(beta) / 2) / 2);
-    //Serial.println("---DONE---");
     loo = (((uhol[0] != beta[0]) or (uhol[1] != beta[1]) or ((uhol[3] != beta[3]) or (uhol[2] != beta[2]))));
-
-    
   }
   
 }

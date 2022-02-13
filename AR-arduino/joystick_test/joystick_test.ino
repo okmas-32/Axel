@@ -16,10 +16,10 @@ String maxj = _maxj, joff = _off;
 
 void setup() {
   Serial.begin(SERIAL_BAUD);
+
+  // inicializačné data pre python
   Serial.print(serStart);
   Serial.print(maxj + spa + joff);
-  //Serial.print(maxj + spa + midx1 + spa + midy1 + spa + midx2 + spa + midy2);
-  //delay(1500);    //pauza kvôli tomu aby RP vôbec dokázal stihnúť prečítať čo je toto AR zač
   Serial.print('\n');
 
   // Joystick 1 setup
@@ -44,23 +44,32 @@ void setup() {
 }
 
 void loop() {
+
+  // čakám kým niečo neni poslané na seriovom porte
   if ((Serial.available() > 0) && (armME == false)) {
     char rec = Serial.read();
     delay(15);
+    
+    // ak niečo prečítam z serioveho portu
     if (rec > 0) {
+
+      // a je to 1
       if (rec == '1') {
-        //Serial.println("dostal si 1 cislo");
+        // tak zapnem kontinuálne posielanie dát z joisticku a tlačítiek
         armME = true;
       }
+
+      // alebo A
       if (rec == 'A') { // pre istotu keby nejde 1 lebo to môže tiež poslaž ako boolian... môže sa stať
-        //Serial.println("dostal si 1");
         armME = true;
       }
       else {
+        // ak nič z toho vyčistím vstup
         rec = "";
       }
     }
   }
+
   if ((armME == true) && (Serial)) {
     
     // Joystick 1:

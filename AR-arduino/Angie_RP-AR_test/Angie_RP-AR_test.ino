@@ -1,6 +1,10 @@
 #include "parametre.h"
 #include <Servo.h>
 
+/*
+ * môžete si pozrieť celí projekt a dokoumentáciu na https://github.com/okmas-32/Axel
+ */
+
 Servo servo[4];
 #define NUM_SERVOS (sizeof(servo) / sizeof(Servo))
 const int sernum = NUM_SERVOS;
@@ -8,7 +12,14 @@ const int sernum = NUM_SERVOS;
 const byte pinsetup[] = {sr1, sr2, sr3, sr4};   // nezabudni na to keď máš viacej sérv spraviť viac Servo "objektov"
 String spa = space;
 String input = "";
+int counter = 0;
+int lastIndex = 0;
+
 bool debug = debugb;
+/* 
+ * ak kód nefunguje keď je zapojený do počítaču kde beží Axel Python program 
+ * tak skontroluj či v parametroch neni debug daný na true.. to neočakáva Python 
+ */
 String debugs = "debug:";
 
 float uhol[] = {0, 0, 0, 0};
@@ -23,26 +34,31 @@ bool ndone = true, loo = false;
 //-----------------------------------------------------------------------------------------------
 void setup() {//========================================setup
 
+  // pre debugovanie a user "interface" (nič lepšie nemáme :D )
   pinMode(LED_BUILTIN, OUTPUT);
 
+  // začať sériovú(USB) kominikáciu
   Serial.begin(SERIAL_BAUD);
 
-  while (!Serial) { // nikdy nepôjde lebo napájame arduina z usb portu takže vždy bude zapnutý sériový port
+  while (!Serial) { // do budúcna keď bude nejaké ukladanie programov
+    // aktuálne nič nerobý lebo to aj tak zapájame len cez USB
     digitalWrite(LED_BUILTIN, HIGH);
     delay(200);
     digitalWrite(LED_BUILTIN, LOW);
     delay(200);
   }
+
+  // zasielanie všetkých potrebných parametrov
   Serial.print(serStart);
   Serial.print(base + spa + waist + spa + arm1 + spa + arm2 + spa + hook);
   Serial.print('\n');
 
+  // inicializácia pinov a zasielanie pinom pozíciu 90°
   for (int i = 0; i < NUM_SERVOS; i++) {
     servo[i].attach(pinsetup[i]);
     delay(20);
     servo[i].write(90);           // záleží na serve.. môže byť nebezpečné!!!
   }
-
 }
 
 
@@ -51,7 +67,7 @@ void setup() {//========================================setup
 bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int alfan, int special = 0) {
   digitalWrite(LED_BUILTIN, HIGH);
   int cas = _cas;                   // zadaný čas na pohyb
-  long t = special;                 // čas od začiatku pohybu
+  long t = 0;                 // čas od začiatku pohybu
 
   float uh[betan];
   int oneskorenie = 19;             // pauza medzi intervalmi posielania uhlu do serva 
@@ -60,108 +76,146 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
   long predMill = aktMill;          // potrebujeme vedieť v ktorých milisekundách bola posledná akcia
   long predMillt = aktMill;         // pre výpočet
 
-  while (cas >= (aktMill - predMill)) {
+  // proste while true loop
+  while (true) {
 
-    for (int i = 0; i < sernum ; i++) { // loopnem cez všetky uhly a vypočítam ich increment
+    // loopnem cez všetky uhly a vypočítam ich increment
+    for (int i = 0; i < sernum ; i++) {
       t += aktMill - predMillt;
       uh[i] = _alfa[i] + (((_beta[i] - _alfa[i]) / cas) * t );
       predMillt = aktMill;
     }
-    aktMill = millis();             // stále potrebujeme aktualizovať aktMill  aby sme vedeli aké sú aktuálne milisekundy
 
-    if ((aktMill - predMill) >= oneskorenie) { // ak sú aktuálne milisekundy mínus predošlé milisekundy väčšie alebo rovné oneskoreniu
+    // stále potrebujeme aktualizovať aktMill  aby sme vedeli aké sú aktuálne milisekundy
+    aktMill = millis();             
 
+    // ak sú aktuálne milisekundy mínus predošlé milisekundy väčšie alebo rovné oneskoreniu
+    if ((aktMill - predMill) >= oneskorenie) { 
+
+      // loopnem toľko krát koľko mám sérv
       for (int i = 0; i < sernum; i++) {
-        
+
+        // ak čas od začiatku programu je väčší ako zadaný
         if (t > cas) {
+          
+          // uhol serva dám na poslanú hodnotu
           uh[i] = uhol[i];
         }
 
+        // vpisovanie vypočítaných uhlov do daného serva
         servo[i].write(uh[i]);
-        if (debug) {
-          Serial.print(debugs); Serial.print("t: "); Serial.println(t); // ser.write(uh);
-          Serial.print(debugs); Serial.print("UH: "); Serial.print(i + " "); Serial.println(uh[i]);
-        }
+
+        // debuuuug
+        if (debug) {Serial.print(debugs); Serial.print("t: "); Serial.println(t);Serial.print(debugs); Serial.print("UH: "); Serial.print(i + " "); Serial.println(uh[i]);}
       }
+
+      // spravil som pohyb tak prepýšem predošlé milis na aktuálne
       predMill = aktMill;
     }
-    for (int i = 0; i < betan ; i++) {
+
+    // idem cez všetky uhly
+    for (int i = 0; i < betan; i++) {
+
+      // ak čas od začiatku programu je väčší ako zadaný alebo zadaný uhol je rovnaký ako uhol na servu
       if ((t > cas) or (uhol[i] == beta[i])) {
+
+        // prepýšem aktuálny uhol na né uhly
         beta[i] = uh[i];
+
+        // informujem druhú stranu sériového portu že je pohyb dokončený
         Serial.println("1");
+        
+        // informujem aj užívateľa aj kód že pohyb bol dokončený
         digitalWrite(LED_BUILTIN, LOW);
-        ndone = false;
-        delay(30);
+        ndone = false;  
+
+        // vráti sa
         return;
       }
     }
   }
 }
 
-int counter = 0;
-int lastIndex = 0;
 
 void loop() {//=============================================loop
 
+  // čakám na dáta z seriového portu
   while (Serial.available() > 0) {
-    
+
+    // čítať všetky charaktery postupne z sériového portu
     char rec = Serial.read();
-    
+
+    // ak je koniec "dátového balíčku" tak spracujem balíček
     if (rec == '\n') {
-      
+
+      // debug
       if (debug) {Serial.println("------------------"); Serial.print(debugs); Serial.println("inpud: ");}
       
+      // prejdem cez všetky charakteri v stringu input
       for (int i = 0; i < input.length(); i++) {
-        
-        if (input.substring(i, i + 1) == ",") {         // hľadám "," o jeden dopredu
+
+        // hľadám "," o jeden dopredu
+        if (input.substring(i, i + 1) == ",") {         
+
+          // uložím uhol od posledného indexu po teraz nájdené "," - 1 a celé to vydelím 100 (proste tak to posielam z pythonu)
           uhol[counter] = input.substring(lastIndex, i).toFloat() / 100;
-          
-          if (counter == 3) {                           //pre posledný uhol ktorý je v %
+
+          // pre posledný uhol ktorý je poslaný z pythonu v %
+          if (counter == 3) {                           
             uhol[counter] = uhol[counter] * 180;
           }
-          
-          if (counter == 2) {                           //kvôli 3mu servu lebo je v hardweare opačne
+
+          // kvôli 3 mu servu lebo je fyzicky opačne
+          if (counter == 2) {
             uhol[counter] = +(uhol[counter] - 180);
           }
-          
+
+          // aktualizujem posledný index
           lastIndex = i + 1;
-          
+
+          // debuug
           if (debug) {Serial.print(debugs + " "); Serial.println(uhol[counter] + spa);}
-          
+
+          // pridám 1 aby som uložil do ďaľšieho poľa v uhloch
           counter++;
         }
-        
-        else if (input.length() == i + 1) {             // posledný block (milisekundy) nemajú za sebou "," tak tie musím zapísať od posledného zápisu po koniec dátového blocku
+
+        // posledná hodnota (milisekundy) nemajú za sebou "," tak tie musím zapísať od posledného zápisu po koniec dátového blocku
+        else if (input.length() == i + 1) {
           milis = input.substring(lastIndex, i + 1).toInt();
-          
+
+          // debuUug
           if (debug) {Serial.print(debugs + " milis: "); Serial.println(milis);}
         }
         
       }
       
-      //Serial.println(uhol[0] + spa + uhol[1] + spa + uhol[2] + spa + uhol[3] + spa + milis);
+      // resetovanie všetkého aby som bol pripravený na ďaľší "dátový balíček"
       input = "";
       counter = 0;
       lastIndex = 0;
       rec = "";
       ndone = true;
+
+      // debuuug
       if (debug) {Serial.print('\n');}
     }
-    
+
+    // keď neni koniec "dátového balíčku" čítam ďalej čo posiela seriový port
     else {
       input += rec;
     }
-    
   }
 
+  // skontrolujem uhli aktuálne v servách voči uhlom zaslených cez sériovú komunikáciu
   loo = (((uhol[0] != beta[0]) or (uhol[1] != beta[1]) or ((uhol[3] != beta[3]) or (uhol[2] != beta[2]))));
   
   if (loo and ndone) {
-    movMe(servo, uhol, (sizeof(uhol) / 2) / 2, milis, beta, (sizeof(beta) / 2) / 2);
-    //movMe(servo, uhol, (sizeof(uhol) / 2) / 2, milis, beta, (sizeof(beta) / 2) / 2);
-    //Serial.println("---DONE---");
-    loo = (((uhol[0] != beta[0]) or (uhol[1] != beta[1]) or ((uhol[3] != beta[3]) or (uhol[2] != beta[2]))));
 
-    
+    // zavolám funkciu na pohyb sérv
+    movMe(servo, uhol, (sizeof(uhol) / 2) / 2, milis, beta, (sizeof(beta) / 2) / 2);
+
+    // kontrolujem ďaľej uhli
+    loo = (((uhol[0] != beta[0]) or (uhol[1] != beta[1]) or ((uhol[3] != beta[3]) or (uhol[2] != beta[2]))));    
   }
 }
