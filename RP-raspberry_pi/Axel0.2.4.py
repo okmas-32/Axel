@@ -89,63 +89,6 @@ class Axel():
         # self.mathAX2(self.X, self.Y, self.Z, 143, 96, 7)
         # self.inicializacia()
 
-    def inicializacia(self, Ax = None):
-
-        if Ax is None:
-            print("E: Neni sú žiadne porty v liste")
-            return
-        ArduinoPort=[]
-        for p in self.ports:
-            port = str(p)
-            if debug['0']:print(port)
-            portEH=port.split(' ', 1)
-            with serial.Serial(portEH[0], self.baud_rate, timeout=2) as ser:
-#TODO https://stackoverflow.com/questions/58268507/how-define-a-serial-port-in-a-class-in-python
-#TODO https://python.hotexamples.com/examples/serial/Serial/write/python-serial-write-method-examples.html
-                x = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
-                Ax = x.split(',')
-                if debug['0']:print(Ax)
-                if Ax[0] == 'Axel':
-                    ArduinoPort.append(portEH[0])
-                    ArduinoPort.append(Ax[1])
-                    print(f'našiel som Arduino {str(Ax[1])} na porte: {str(portEH[0])}')
-
-                    # if len(Ax)>2: #TODO get full data
-
-                    if Ax[1] == 'Angie':
-                        self.A = ArduinoPort[len(ArduinoPort)-2:len(ArduinoPort)+1:1]
-                        ArduinoPort.pop(len(ArduinoPort)-1)
-                        ArduinoPort.pop(len(ArduinoPort)-1)
-                        rou = 100
-                        spacer = ","
-
-                        serdata = str(int(round(self.u1,2)*rou)) + spacer + str(int(round(self.u2,2)*rou)) + spacer + str(int(round(self.u3,2)*rou)) + spacer + str(int(round(self.u4,2)/180*100)) + spacer + str(500)
-                        #note štvrtý uhol (uhol chnapaka/háku) je prepočítaný do % lebo neni potreba aby bol taký presný
-                        #serdata = str(15)
-                        print(serdata)
-                        ser.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
-                        c = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
-                        print(c)
-                    elif Ax[1] == 'Bimbis:)':
-                        self.port.write("1".encode(locale.getpreferredencoding().rstrip()))
-                        self.B = ArduinoPort[len(ArduinoPort)-2:len(ArduinoPort)+1:1]
-                        ArduinoPort.pop(len(ArduinoPort)-1)
-                        ArduinoPort.pop(len(ArduinoPort)-1)
-                    elif Ax[1] == 'joy':
-                        #self.port.write("1".encode(locale.getpreferredencoding().rstrip()))
-                        self.joy = ArduinoPort[len(ArduinoPort)-2:len(ArduinoPort)+1:1]
-                        ArduinoPort.pop(len(ArduinoPort)-1)
-                        ArduinoPort.pop(len(ArduinoPort)-1)
-                    else:print("Nezadefinovaný ovládač na Axela (alebo poškodenie sériových dát.. v tom prípade reset!")
-                else:
-                    if debug['0']:print(str(portEH[0])+" Neni Arduino")
-            if debug['0']:print('\r')
-        if 2>(len(self.joy) + len(self.B) + len(self.A)):
-            print("Nenašiel som žiadne Arduino")
-            return
-        print("---------------")
-        return
-
     def ini(self, ports):
         """funkcia na získanie portov v ktorých je Arduino a získanie dát z Arduina o samotnej ruke
         (funguje aj vo windowse☺)"""
