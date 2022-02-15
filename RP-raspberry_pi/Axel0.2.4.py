@@ -6,11 +6,13 @@ import time
 import locale
 import asyncio
 from math import sqrt, atan2, degrees, atan
+from csv import DictReader
 
 baud_rate = 115200
 
 debug = {
     '0':bool(1),
+    'csv':bool(1),
     'math':bool(0),
     'ini':bool(1),
     'fromser':bool(0),                              # z sériového portu
@@ -65,6 +67,14 @@ class Axel():
 
         self.spacer = ","               # medzera aby to Arduino vedelo prečítať
         self.predInp = []
+
+        self.pos = []
+        with open('positions.csv', 'r') as csvf:
+            # note  musí byť s čiarkami (",") medzi hodnotami uložené
+            csv_diktionary = DictReader(csvf)
+            for row1 in csv_diktionary:
+
+                if debug['csv']: print(debug['gtext'] + f' {row1}')
 
 
         self.X = 90
@@ -143,8 +153,6 @@ class Axel():
 
         # prejde cez všetky porty ktoré mu dá serial.tools.list_ports knižnica
         for i, p in enumerate(reversed(ports)):
-
-            x = None
 
             # hodí ich do stringu, splitne a zoberie si prvú hodnotu z toho splitu (to býva ten prvý port)
             port = str(p)
@@ -403,15 +411,15 @@ class Axel():
                 self.sendData = bool(0)
 
             if rec[1] is not None:
-                self.u1 += rec[1] / 2
+                self.u2 += rec[1] / 2
                 self.sendData = bool(0)
 
             if rec[3] is not None:
-                self.u1 += rec[3] / 2
+                self.u3 += rec[3] / 2
                 self.sendData = bool(0)
 
             if rec[4] is not None:
-                self.u1 += rec[4] / 2
+                self.u4 += rec[4] / 2
                 self.sendData = bool(0)
 
             out = { # raw data z joysticku
@@ -444,20 +452,21 @@ class Axel():
         except Exception as e:
             CustomError(e)
 
-    async def sendAxel(self, ser):
+    async def sendAxel(self, ser, milis = 500):
         """táto funkcia slúži na zasielanie uhlov a času za ktorý sa majú servá pohnúť do Axel Arduina"""
 
         rou = 100  # zaokruhlenie(pre posledné servo čiže chnapačky) / zjednodušenie(aby som nemusel posielať desatinné čísla) pri posielaní do sériového portu
 
         # zostaviť sériové dáta
         serdata = str(int(round(self.u1, 2) * rou)) + self.spacer + str(int(round(self.u2, 2) * rou)) + self.spacer + str(
-            int(round(self.u3, 2) * rou)) + self.spacer + str(int(round(self.u4, 2) / 180 * 100)) + self.spacer + str(500)
+            int(round(self.u3, 2) * rou)) + self.spacer + str(int(round(self.u4, 2) / 180 * 100)) + self.spacer + str(milis)
 
         # debuuuuug
         if debug['0']:print(serdata)
 
         # samotné posielanie dát
         ser.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
+
         c = await ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
 
         # debuug stuuuf
