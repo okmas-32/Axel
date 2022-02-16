@@ -4,6 +4,7 @@ import serial
 import serial.tools.list_ports      # python -m serial.tools.list_ports -v
 import time
 import locale
+from glob import glob
 import asyncio
 from math import sqrt, atan2, degrees, atan
 from csv import DictReader
@@ -11,14 +12,14 @@ from csv import DictReader
 baud_rate = 115200
 
 debug = {
-    '0':bool(1),
-    'csv':bool(1),
-    'math':bool(0),
-    'ini':bool(1),
+    '0':bool(1),            # celkový debug
+    'csv':bool(1),          # čítanie CSV súboru
+    'math':bool(0),         # matematika
+    'ini':bool(1),          # inicializačný
     'fromser':bool(0),                              # z sériového portu
     'text':'\x1b[1;33;33m' + 'debug:' + '\x1b[0m',  # hehe found coloring printout
     'space':'\x1b[1;33;33m' + 'I ' + '\x1b[0m',
-    'gtext':'\33[92m' + 'I ' + '\33[0m',            # green alebo good text
+    'gtext':'\33[92m' + 'I ' + '\33[0m',            # green alebo aj good text
     'Error':'\x1b[1;30;41m' + '\tE ' + '\x1b[0m'
 }
 
@@ -38,11 +39,19 @@ class CustomError(Exception):
 class Axel():
     def __init__(self):
         """tu si iba určím aké parametre bude držať objekt v classe Axel ako napr. port v ktorom je Arduino alebo dĺžku ramena ruky"""
-        self.u1 = 45
-        self.u2 = 45
-        self.u3 = 45
-        self.u4 = 0
 
+        self.ar1u1 = 45
+        self.ar1u2 = 45
+        self.ar1u3 = 45
+        self.ar1u4 = 0
+
+        self.ar2u1 = 45
+        self.ar2u2 = 45
+        self.ar2u3 = 45
+        self.ar2u4 = 0
+        self.ar2u5 = 0
+
+        #TODO spraviť classi pre každé Arduino aby malo v kope sériovú komunikáciu, parametre a uhli
         #ports in serial
         self.A = serial.Serial()        # ser. pre Angie
         self.B = serial.Serial()        # ser. pre Bimbisa
@@ -69,11 +78,15 @@ class Axel():
         self.predInp = []
 
         self.pos = []
-        with open('positions.csv', 'r') as csvf:
+
+        # čítanie z CSV
+        p = glob.glob(".\*.csv")
+        csv = str(p[0])
+        with open(csv, 'r') as csvf:
             # note  musí byť s čiarkami (",") medzi hodnotami uložené
             csv_diktionary = DictReader(csvf)
             for row1 in csv_diktionary:
-
+                self.pos.append(row1)
                 if debug['csv']: print(debug['gtext'] + f' {row1}')
 
 
@@ -87,68 +100,34 @@ class Axel():
         # -3689,7823,14682,25,500
 
         # self.mathAX2(self.X, self.Y, self.Z, 143, 96, 7)
-        # self.inicializacia()
 
-    def inicializacia(self, Ax = None):
+        portsini = []
 
-        if Ax is None:
-            print("E: Neni sú žiadne porty v liste")
-            return
-        ArduinoPort=[]
-        for p in self.ports:
-            port = str(p)
-            if debug['0']:print(port)
-            portEH=port.split(' ', 1)
-            with serial.Serial(portEH[0], self.baud_rate, timeout=2) as ser:
-#TODO https://stackoverflow.com/questions/58268507/how-define-a-serial-port-in-a-class-in-python
-#TODO https://python.hotexamples.com/examples/serial/Serial/write/python-serial-write-method-examples.html
-                x = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
-                Ax = x.split(',')
-                if debug['0']:print(Ax)
-                if Ax[0] == 'Axel':
-                    ArduinoPort.append(portEH[0])
-                    ArduinoPort.append(Ax[1])
-                    print(f'našiel som Arduino {str(Ax[1])} na porte: {str(portEH[0])}')
+        for port, _, _ in sorted(serial.tools.list_ports.comports()):
+            portsini.append(port)
 
-                    # if len(Ax)>2: #TODO get full data
+        # hľadá Arduína kým sú neni pripojené všetky
+        while not ((self.Aport and self.Bport) and self.joyPort): # počká sekundu potom skontroluje či sú nové porty ak tak skontroluje či sú to Arduiná s Axelom
 
-                    if Ax[1] == 'Angie':
-                        self.A = ArduinoPort[len(ArduinoPort)-2:len(ArduinoPort)+1:1]
-                        ArduinoPort.pop(len(ArduinoPort)-1)
-                        ArduinoPort.pop(len(ArduinoPort)-1)
-                        rou = 100
-                        spacer = ","
+            time.sleep(1)
+            print("čakám na pripojenie Arduín")
+            ports = list(serial.tools.list_ports.comports())
 
-                        serdata = str(int(round(self.u1,2)*rou)) + spacer + str(int(round(self.u2,2)*rou)) + spacer + str(int(round(self.u3,2)*rou)) + spacer + str(int(round(self.u4,2)/180*100)) + spacer + str(500)
-                        #note štvrtý uhol (uhol chnapaka/háku) je prepočítaný do % lebo neni potreba aby bol taký presný
-                        #serdata = str(15)
-                        print(serdata)
-                        ser.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
-                        c = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
-                        print(c)
-                    elif Ax[1] == 'Bimbis:)':
-                        self.port.write("1".encode(locale.getpreferredencoding().rstrip()))
-                        self.B = ArduinoPort[len(ArduinoPort)-2:len(ArduinoPort)+1:1]
-                        ArduinoPort.pop(len(ArduinoPort)-1)
-                        ArduinoPort.pop(len(ArduinoPort)-1)
-                    elif Ax[1] == 'joy':
-                        #self.port.write("1".encode(locale.getpreferredencoding().rstrip()))
-                        self.joy = ArduinoPort[len(ArduinoPort)-2:len(ArduinoPort)+1:1]
-                        ArduinoPort.pop(len(ArduinoPort)-1)
-                        ArduinoPort.pop(len(ArduinoPort)-1)
-                    else:print("Nezadefinovaný ovládač na Axela (alebo poškodenie sériových dát.. v tom prípade reset!")
-                else:
-                    if debug['0']:print(str(portEH[0])+" Neni Arduino")
-            if debug['0']:print('\r')
-        if 2>(len(self.joy) + len(self.B) + len(self.A)):
-            print("Nenašiel som žiadne Arduino")
-            return
-        print("---------------")
-        return
+            # debug stuuf (keď nenájde žiadne porty)
+            if not portsini:
+                raise CustomError("Nenašiel som žiadne porty na hľadanie Axela", 1)
+                pass
+            if portsini != ports:
+                self.ini(ports)  # kontrola či sú nové Arduína Axely
+                portsini = ports
 
     def ini(self, ports):
         """funkcia na získanie portov v ktorých je Arduino a získanie dát z Arduina o samotnej ruke
         (funguje aj vo windowse☺)"""
+
+        # TODO https://stackoverflow.com/questions/58268507/how-define-a-serial-port-in-a-class-in-python
+        # TODO https://python.hotexamples.com/examples/serial/Serial/write/python-serial-write-method-examples.html
+
         portEH = []
 
         # prejde cez všetky porty ktoré mu dá serial.tools.list_ports knižnica
@@ -347,9 +326,15 @@ class Axel():
         if debug['math']: print(debug['text'], str(gama), str(alfa), str(beta))
 
         # ukladanie uhlov
-        self.u1 = gama  # uhol základni (pohyb : do ľava, do prava)
-        self.u2 = alfa  # uhol na základni (pohyb : hore, dole)
-        self.u3 = beta  # uhol zápestia (pohyb : hore, dole)
+        if (base == self.AParametre['base']):
+            self.ar1u1 = gama   # uhol základni (pohyb : do ľava, do prava)
+            self.ar1u2 = alfa   # uhol na základni (pohyb : hore, dole)
+            self.ar1u3 = beta   # uhol zápestia (pohyb : hore, dole)
+
+        if (base == self.BParametre['base']):
+            self.ar2u1 = gama
+            self.ar2u2 = alfa
+            self.ar2u3 = beta
 
     def cloSER(self):
         """funkcia na uzatvaranie seriovích komunikácii... ano viem mohol som použiť build in funkcie
@@ -398,8 +383,9 @@ class Axel():
             for i in range(5):
                 rec[i+4] = bool(re[i+5] if ((not self.predInp) and bool(re[i+5]) == True) else False)
                 self.predInp[i] = bool(re[i + 5])
-                print(rec[i+4])
-                print(self.predInp[i])
+                if debug['0']:
+                    print(rec[i+4])
+                    print(self.predInp[i])
 
             #  rec[] = [
             #           0-3: keď je poslaná hodnota väčšia ako "deadzone"(zadané Arduinom) tak uloží nie None hodnotu (v int)
@@ -426,12 +412,12 @@ class Axel():
                     1:{
                         'X' : int(re[0]),
                         'Y' : int(re[1]),
-                        'SW' : int(re[2])
+                        'SW' : int(re[2])       # nepoužívame lebo je ťažké stlačiť tlačítko a nepohnúť joystickom
                     },
                     2:{
                         'X' : int(re[3]),
                         'Y' : int(re[4]),
-                        'SW' : int(re[5])
+                        'SW' : int(re[5])       # nepoužívame lebo je ťažké stlačiť tlačítko a nepohnúť joystickom
                     },
                     'SW':{
                         1:bool(re[5]),
@@ -485,29 +471,10 @@ if __name__ == "__main__":
     # spravý prvú inicializáciu všetkých premenných
     ar = Axel()
 
-    portsini = []
-
-    for port, _, _ in sorted(serial.tools.list_ports.comports()):
-        portsini.append(port)
-
     try:
         # spravý prvú inicializáciu Axelovských Arduín
-        ar.ini(portsini)
+        # ar.ini(portsini)
 
-        # hľadá Arduína kým sú neni pripojené všetky
-        while not ((ar.Aport and ar.Bport) and ar.joyPort): # počká sekundu potom skontroluje či sú nové porty ak tak skontroluje či sú to Arduiná s Axelom
-
-            time.sleep(1)
-            print("čakám na pripojenie Arduín")
-            ports = list(serial.tools.list_ports.comports())
-
-            # debug stuuf (keď nenájde žiadne porty)
-            if not portsini:
-                raise CustomError("Nenašiel som žiadne porty na hľadanie Axela", 1)
-                pass
-            if portsini != ports:
-                ar.ini(ports)  # kontrola či sú nové Arduína Axely
-                portsini = ports
 
 
         #TODO spraviť na checkovanie či je raspberry ready (minimálne jedna RUKA)
