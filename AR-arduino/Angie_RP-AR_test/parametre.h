@@ -1,7 +1,8 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
-#define debugb false
+#define debugb true
+#define ARMservo true
 
 #define serStart "Axel,Angie,"
 #define space ","
@@ -25,5 +26,18 @@
 #define sr2 5
 #define sr3 9
 #define sr4 11
+
+// minimá a Maximá sierv
+#define ser1max 180
+#define ser1min 1
+
+#define ser2max 180
+#define ser2min 1
+
+#define ser3max 180
+#define ser3min 20
+
+#define ser4max 180
+#define ser4min 1
 
 #endif

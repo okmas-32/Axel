@@ -101,6 +101,7 @@ class Axel():
 
         # self.mathAX2(self.X, self.Y, self.Z, 143, 96, 7)
 
+<<<<<<< HEAD
         portsini = []
 
         for port, _, _ in sorted(serial.tools.list_ports.comports()):
@@ -121,6 +122,8 @@ class Axel():
                 self.ini(ports)  # kontrola či sú nové Arduína Axely
                 portsini = ports
 
+=======
+>>>>>>> bb1e482226c1ae6b02f6986cc1a46f5441a468f4
     def ini(self, ports):
         """funkcia na získanie portov v ktorých je Arduino a získanie dát z Arduina o samotnej ruke
         (funguje aj vo windowse☺)"""
