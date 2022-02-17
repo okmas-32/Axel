@@ -1,6 +1,6 @@
 import subprocess
 import sys
-import serial
+import serial.tools.list_ports
 
 try:
     #inicializuje sériovú komunikáciu
@@ -11,17 +11,20 @@ try:
         ser.close()
     ser.open()
 
+    sys.stdout.write(ser)
+
     #prečítam čo mi napísal z jeho setup()
     ser.readline()
 
     #napíšem mu 1 aby začal s posielaním dát o joisticku
-    ser.write(b'A\r\n')
+    b = b'A\r\n'
+    ser.write(b)
 
     #čítam dáta ktoré posiela
     while True:  # The program never ends... will be killed when master is over.
         output = ser.readline().decode('utf-8') # read output
-        sys.stdout.write(output) # write output to stdout
         sys.stdout.flush()
+        sys.stdout.write(output) # write output to stdout
 
 except Exception as e:
     #ak je nejaký eror tak ho iba vypíše do "výstupu" tohoto bloku kódu

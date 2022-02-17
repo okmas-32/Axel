@@ -18,8 +18,7 @@ void setup() {
   Serial.begin(SERIAL_BAUD);
 
   // inicializačné data pre python
-  Serial.print(serStart);
-  Serial.print(maxj + spa + joff);
+  Serial.print(serStart + maxj + spa + joff);
   Serial.print('\n');
 
   // Joystick 1 setup

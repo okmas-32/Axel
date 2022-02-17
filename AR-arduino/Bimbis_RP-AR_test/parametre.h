@@ -1,9 +1,9 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
-#define debugb true
-#define justdbg true
-#define ARMservo false
+#define debugb false
+#define justdbg false
+#define ARMservo true
 
 #define serStart "Axel,Bimbis:),"
 #define space ","

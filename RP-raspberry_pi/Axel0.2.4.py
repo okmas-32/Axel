@@ -13,7 +13,7 @@ baud_rate = 115200
 
 debug = {
     '0': bool(1),            # celkový debug
-    'csv': bool(1),          # čítanie CSV súboru
+    'csv': bool(0),          # čítanie CSV súboru
     'math': bool(0),         # matematika
     'ini': bool(1),          # inicializačný
     'fromser': bool(0),      # z sériového portu
@@ -96,7 +96,6 @@ class Axel():
             # čítanie z CSV
             p = glob(".\*.csv")
             csv = str(p[0])
-            print(csv)
             # while True:
             #     time.sleep(5)
             loop = asyncio.get_event_loop()
@@ -169,7 +168,7 @@ class Axel():
                             # vypíšem debuuug že som našiel na "tomto" porte Angie
                             if debug['0'] and debug['ini']: print(debug['gtext'] + f'{portEH[i]} Angie Arduino')
 
-                            # uloźím seriový port (zavriem ten starý otvorým ten nový), port (ako text) a samotné parametre
+                            # uložím seriový port (zavriem ten starý otvorým ten nový), port (ako text) a samotné parametre
                             # danej ruky (všetky dĺžky a meno)
                             self.A = ser
                             ser.close()
@@ -205,7 +204,9 @@ class Axel():
                             # spravím to isté ako pri rukách len neotvorím nový port lebo bude otvorený pri subprocesse
                             ser.close()
                             self.joy = ser
-                            # self.joy.open()
+                            self.joy.open()
+                            time.sleep(2)
+                            _ = self.joy.readline()
                             self.joyPort = portEH[i]
 
                             # uložím parametre ako maximum a "hluchú zónu" (nazval som to dead) ktorú pošle Arduino (center si vypočítam z max)
@@ -217,25 +218,26 @@ class Axel():
                             }
 
                             # iniciuje proces 1 (p1) ako clobálne a dá mu dubprocess s python programom (joy_ReadCOM.py) + port a baud rate v ktorom pracujeme
-                            global p1
-                            p1 = subprocess.Popen(
-                                    ['python', './joy_ReadCOM.py', str(self.joyPort), str(self.baud_rate)],
-                                    stdin=subprocess.PIPE,
-                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-                            # keď je debug zapnutý tak vypíše 10 riadkov z subprocessu čo prečítal (proste či to ide)
-                            if debug['0'] and debug['ini']:
-                                for _ in range(10):
-                                    rjoy = p1.stdout.readline().decode().rstrip()
-                                    print(debug['gtext'] + f'joyAR says: {rjoy}')
+                            # global p1
+                            # p1 = subprocess.Popen(
+                            #         ['python', './joy_ReadCOM.py', str(self.joyPort), str(self.baud_rate)],
+                            #         stdin=subprocess.PIPE,
+                            #         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            #
+                            # # keď je debug zapnutý tak vypíše 10 riadkov z subprocessu čo prečítal (proste či to ide)
+                            # if debug['0'] and debug['ini']:
+                            #     for _ in range(10):
+                            #         rjoy = p1.stdout.readline().decode().rstrip()
+                            #         print(debug['gtext'] + f'joyAR says: {rjoy}')
 
                         if debug['0'] and debug['ini']:
                             print(debug['gtext'] + str(Ax))
                             print('------------------------\r')
 
-                        else:
-                            self.notAxel.append(portEH)
-                            pass
+                        # else:
+                        #     self.notAxel.append(portEH)
+                        #     if debug['0'] and debug['ini']:
+                        #     pass
 
                     # vypíšem Error ak nejaký nastane.. aaa pokračuje :D
                     except Exception as e:
@@ -356,6 +358,12 @@ class Axel():
         self.joy.close()
 
     def readJOY(self):
+        self.joy.write(b'A\r\n')
+        while True:
+            ree = str(self.joy.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()).split(',')
+            yield ree
+
+    def readJOYdata(self):
         """tato funkcia je čisto na čítanie z joystick Arduina"""
 
         # if self.rjoy is None:
@@ -375,75 +383,86 @@ class Axel():
 
         try:
             # prečíta riadok z subprocessu
-            re = p1.stdout.readline().decode().rstrip().split(',')
+            # re = p1.stdout.readline().decode().rstrip().split(',')
+            for re in self.readJOY():
+                print(re)
 
-            rec = []
+                rec = []
 
-            if re[0] == 'Axel':  # ak sa nejakým spôsobom reštartuje Arduino (vyhodí error)
-                CustomError("Arduino joy bolo reštartované")
-                return
+                if re[0] == 'Axel':  # ak sa nejakým spôsobom reštartuje Arduino (vyhodí error)
+                    CustomError("Arduino joy bolo reštartované")
+                    return
 
-            # už rovno pri zapisovaní hodnnôt kontrolujem či sú väčšie ako "dead zone" zadaný v arduine
-            # note ignorujem dáta o switchoch na joysticku sú nepoužitelné lebo na ich stlačenie sa často stáva že sa pohne aj joystick.. používame radšej externé tlačítka na krabičke
-            rec[0] = int(int(re[0]) - self.joyParametre['center']) if (int(re[0]) > self.joyParametre['dead']) or (int(re[0]) < self.joyParametre['dead']*(-1)) else None
-            rec[1] = int(int(re[1]) - self.joyParametre['center']) if (int(re[1]) > self.joyParametre['dead']) or (int(re[0]) < self.joyParametre['dead']*(-1)) else None
-            rec[2] = int(int(re[3]) - self.joyParametre['center']) if (int(re[3]) > self.joyParametre['dead']) or (int(re[0]) < self.joyParametre['dead']*(-1)) else None
-            rec[3] = int(int(re[4]) - self.joyParametre['center']) if (int(re[4]) > self.joyParametre['dead']) or (int(re[0]) < self.joyParametre['dead']*(-1)) else None
+                # už rovno pri zapisovaní hodnnôt kontrolujem či sú väčšie ako "dead zone" zadaný v arduine
+                # note ignorujem dáta o switchoch na joysticku sú nepoužitelné lebo na ich stlačenie sa často stáva že sa pohne aj joystick.. používame radšej externé tlačítka na krabičke
+                rec[0] = int(int(re[0]) - self.joyParametre['center']) if (int(re[0]) > self.joyParametre['dead']) or ( int(re[0]) < self.joyParametre['dead']*(-1)) else None
+                rec[1] = int(int(re[1]) - self.joyParametre['center']) if (int(re[1]) > self.joyParametre['dead']) or ( int(re[1]) < self.joyParametre['dead']*(-1)) else None
+                rec[2] = int(int(re[3]) - self.joyParametre['center']) if (int(re[3]) > self.joyParametre['dead']) or ( int(re[3]) < self.joyParametre['dead']*(-1)) else None
+                rec[3] = int(int(re[4]) - self.joyParametre['center']) if (int(re[4]) > self.joyParametre['dead']) or ( int(re[4]) < self.joyParametre['dead']*(-1)) else None
 
-            # čítanie externých tlačítiek
-            for i in range(5):
-                rec[i+4] = bool(re[i+5] if ((not self.predInp) and bool(re[i+5]) == True) else False)
-                self.predInp[i] = bool(re[i + 5])
-                if debug['0']:
-                    print(rec[i+4])
-                    print(self.predInp[i])
+                print(rec)
+                
+                # čítanie externých tlačítiek
+                # for i in range(5):
+                #     rec[i+4] = bool(re[i+5] if ((not self.predInp) and bool(re[i+5]) == True) else False)
+                #     self.predInp[i] = bool(re[i + 5])
+                #     if debug['0']:
+                #         print(rec[i+4])
+                #         print(self.predInp[i])
 
-            #  rec[] = [
-            #           0-3: keď je poslaná hodnota väčšia ako "deadzone"(zadané Arduinom) tak uloží nie None hodnotu (v int)
-            #           4-8: keď poslaná hodnota je
+                #  rec[] = [
+                #           0-3: keď je poslaná hodnota väčšia ako "deadzone"(zadané Arduinom) tak uloží nie None hodnotu (v int)
+                #           4-8: keď poslaná hodnota je
 
-            # kontrolujem či niečo je v prečítaných dátach a ak ano tak polovičku z toho pri
-            if rec[0] is not None:
-                self.u1 += rec[0] / 2
-                self.sendData = bool(0)
+                # kontrolujem či niečo je v prečítaných dátach a ak ano tak polovičku z toho pri
+                if rec[0] is not None:
+                    self.u1 += int(rec[0]) / 2
+                    self.sendData = bool(0)
 
-            if rec[1] is not None:
-                self.u2 += rec[1] / 2
-                self.sendData = bool(0)
+                if rec[1] is not None:
+                    self.u2 += int(rec[1]) / 2
+                    self.sendData = bool(0)
 
-            if rec[3] is not None:
-                self.u3 += rec[3] / 2
-                self.sendData = bool(0)
+                if rec[3] is not None:
+                    self.u3 += int(rec[3]) / 2
+                    self.sendData = bool(0)
 
-            if rec[4] is not None:
-                self.u4 += rec[4] / 2
-                self.sendData = bool(0)
+                if rec[4] is not None:
+                    self.u4 += int(rec[4]) / 2
+                    self.sendData = bool(0)
 
-            out = { # raw data z joysticku
-                    1:{
-                        'X' : int(re[0]),
-                        'Y' : int(re[1]),
-                        'SW' : int(re[2])       # nepoužívame lebo je ťažké stlačiť tlačítko a nepohnúť joystickom
-                    },
-                    2:{
-                        'X' : int(re[3]),
-                        'Y' : int(re[4]),
-                        'SW' : int(re[5])       # nepoužívame lebo je ťažké stlačiť tlačítko a nepohnúť joystickom
-                    },
-                    'SW':{
-                        1:bool(re[5]),
-                        2:bool(re[6]),
-                        3:bool(re[7]),
-                        4:bool(re[8]),
-                        5:bool(re[9])
+                # None
+                # 0
+                # 0
+                # 0
+                # 0
+
+
+                out = { # raw data z joysticku
+                        1:{
+                            'X' : int(re[0]),
+                            'Y' : int(re[1]),
+                            'SW' : int(re[2])       # nepoužívame lebo je ťažké stlačiť tlačítko a nepohnúť joystickom
+                        },
+                        2:{
+                            'X' : int(re[3]),
+                            'Y' : int(re[4]),
+                            'SW' : int(re[5])       # nepoužívame lebo je ťažké stlačiť tlačítko a nepohnúť joystickom
+                        },
+                        'SW':{
+                            1:bool(re[5]),
+                            2:bool(re[6]),
+                            3:bool(re[7]),
+                            4:bool(re[8]),
+                            5:bool(re[9])
+                        }
                     }
-                }
 
-            # ukladá dáta do lokálneho rjoy a vracia dáta
-            self.rjoy = out
+                # ukladá dáta do lokálneho rjoy a vracia dáta
+                self.rjoy = out
 
-            time.sleep(0.05) # čakanie 50 miliseconds na ďaľší inpud (lebo Arduino posiela dáta každých 50 milisekúnd)
-            return out
+                time.sleep(0.05) # čakanie 50 miliseconds na ďaľší inpud (lebo Arduino posiela dáta každých 50 milisekúnd)
+                return out
 
         # zaobchádzanie s errorom
         except Exception as e:
@@ -488,13 +507,14 @@ class Axel():
             return
 
     async def CSVr(self, csvfile):
-        print(debug['gtext'] + debug['text'] + f' CSV:\r')
         with open(csvfile, 'r') as csvf:
             # note  musí byť s čiarkami (",") medzi hodnotami uložené
             csv_diktionary = DictReader(csvf)
             for row1 in csv_diktionary:
                 self.pos.append(row1)
-                if debug['csv']: print(debug['gtext'] + f' {row1}')
+                if debug['csv']:
+                    print(debug['gtext'] + debug['text'] + f' CSV:\r')
+                    print(debug['gtext'] + f' {row1}')
 
 
 # toto pôjde jedine ak to je spustené ako main program
@@ -508,8 +528,12 @@ if __name__ == "__main__":
         #===============finnaly the while True loop
         while True:
             time.sleep(0.01)
-            x = ar.readJOY()
+            x = ar.readJOYdata()
             print(x)
+            print(ar.u1)
+            print(ar.u2)
+            print(ar.u3)
+            print(ar.u4)
             if (not ar.sendData) and ar.predInp[0]:
                 ar.sendAxel(ar.A)
 

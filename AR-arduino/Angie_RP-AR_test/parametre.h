@@ -1,7 +1,7 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
-#define debugb true
+#define debugb false
 #define ARMservo true
 
 #define serStart "Axel,Angie,"

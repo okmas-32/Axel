@@ -64,7 +64,7 @@ void setup() {//========================================setup
   }
 }
 
-
+// 4500,4500,4500,25,2000
 
 //------------ hlavná časť pre pohyb ------------
 bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int alfan, int special = 0) {
