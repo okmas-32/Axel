@@ -103,7 +103,7 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
         if (t > cas) {
           uh[i] = uhol[i];
         }
-        
+
         if (i == 1) {
           if (ARMservo) {
             servo[count_ser].write(180 - uh[i]);
@@ -112,12 +112,12 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
           }
           if ((debug) or (justdbg)) {
             Serial.print("normal SERVO: ");
-            Serial.println(uh[i-1]);
+            Serial.println(uh[i - 1]);
             Serial.print("SPECIAL SERVO: ");
             Serial.println(180 - uh[i]);
           }
         }
-        
+
         else {
           if ((debug) or (justdbg)) {
             Serial.print("normal SERVO: ");
@@ -134,7 +134,7 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
         if (debug) {
           Serial.print(debugs); Serial.print("t: "); Serial.println(t); // ser.write(uh);
           Serial.print(debugs); Serial.print("UH: "); Serial.println(uh[i]);
-          }
+        }
       }
       if (debug) {
         Serial.print('\n'); Serial.print("-----------ciklus-----------"); Serial.print('\n');
@@ -170,58 +170,75 @@ void loop() {//========================================loop
         Serial.println("inpud: ");
       }
 
-      for (int i = 0; i < input.length(); i++) {
-        if (input.substring(i, i + 1) == ",") {
-
-          uhol[counter] = input.substring(lastIndex, i).toFloat() / 100;
-
-          if (counter == 2) {
-            uhol[counter] = (180 - uhol[counter]);
-            if (uhol[counter] < 90) {
-              uhol[counter] = 90;
-            }
-          }
-
-          if (counter == 3) {
-            uhol[counter] = uhol[counter] * 180;
-          }
-          if (counter == 4) { // úprava percent lebo servo nemá celý rozsah volný
-            uhol[counter] = (uhol[counter] * (ser5max - ser5min));
-          }
-
-          lastIndex = i + 1;
-
-          if (debug) {
-            Serial.print(debugs + " ");
-            Serial.println(uhol[counter] + spa);
-          }
-
-          if (counter > sernum + 1) {
-            for (int i = 0; i < sernum; i++) {
-              if (uhol[i] <= serRozsah[i]) {
-                uhol[i] = serRozsah[i];
-                i++;
-              }
-              if (uhol[i] >= serRozsah[i + 1]) {
-                uhol[i] = serRozsah[i + 1];
-                i++;
-              }
-              else{
-                i++;
-              }
-            }
-            i = input.length();
-          }
-          
-          counter++;
+      if (input == "reset") {
+        for (int i = 0; i < sernum; i++) {
+          uhol[i] = 90;
+          milis = 2000;
         }
+        input = "";
+        counter = 0;
+        lastIndex = 0;
+        rec = "";
+        ndone = true;
+        if (debug) {
+          Serial.print('\n');
+        }
+      }
+      else {
 
-        if (input.length() == i + 1) {
-          milis = input.substring(lastIndex, i + 1).toInt();
+        for (int i = 0; i < input.length(); i++) {
+          if (input.substring(i, i + 1) == ",") {
 
-          if (debug) {
-            Serial.print(debugs + " milis: ");
-            Serial.println(milis);
+            uhol[counter] = input.substring(lastIndex, i).toFloat() / 100;
+
+            if (counter == 2) {
+              uhol[counter] = (180 - uhol[counter]);
+              if (uhol[counter] < 90) {
+                uhol[counter] = 90;
+              }
+            }
+
+            if (counter == 3) {
+              uhol[counter] = uhol[counter] * 180;
+            }
+            if (counter == 4) { // úprava percent lebo servo nemá celý rozsah volný
+              uhol[counter] = (uhol[counter] * (ser5max - ser5min));
+            }
+
+            lastIndex = i + 1;
+
+            if (debug) {
+              Serial.print(debugs + " ");
+              Serial.println(uhol[counter] + spa);
+            }
+
+            if (counter > sernum + 1) {
+              for (int i = 0; i < sernum; i++) {
+                if (uhol[i] <= serRozsah[i]) {
+                  uhol[i] = serRozsah[i];
+                  i++;
+                }
+                if (uhol[i] >= serRozsah[i + 1]) {
+                  uhol[i] = serRozsah[i + 1];
+                  i++;
+                }
+                else {
+                  i++;
+                }
+              }
+              i = input.length();
+            }
+
+            counter++;
+          }
+
+          if (input.length() == i + 1) {
+            milis = input.substring(lastIndex, i + 1).toInt();
+
+            if (debug) {
+              Serial.print(debugs + " milis: ");
+              Serial.println(milis);
+            }
           }
         }
       }

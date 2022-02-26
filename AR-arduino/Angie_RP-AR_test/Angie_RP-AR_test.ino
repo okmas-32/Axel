@@ -193,67 +193,70 @@ void loop() {//=============================================loop
           Serial.print('\n');
         }
       }
+      else {
 
-      // prejdem cez všetky charakteri v stringu input
-      for (int i = 0; i < input.length(); i++) {
+        // prejdem cez všetky charakteri v stringu input
+        for (int i = 0; i < input.length(); i++) {
 
-        // hľadám "," o jeden dopredu
-        if (input.substring(i, i + 1) == ",") {
+          // hľadám "," o jeden dopredu
+          if (input.substring(i, i + 1) == ",") {
 
-          // uložím uhol od posledného indexu po teraz nájdené "," - 1 a celé to vydelím 100 (proste tak to posielam z pythonu)
-          uhol[counter] = input.substring(lastIndex, i).toFloat() / 100;
+            // uložím uhol od posledného indexu po teraz nájdené "," - 1 a celé to vydelím 100 (proste tak to posielam z pythonu)
+            uhol[counter] = input.substring(lastIndex, i).toFloat() / 100;
 
-          // pre posledný uhol ktorý je poslaný z pythonu v %
-          if (counter == 3) {
-            uhol[counter] = uhol[counter] * 180;
-          }
-
-          // kvôli 3 mu servu lebo je fyzicky opačne
-          if (counter == 2) {
-            uhol[counter] = (180 - uhol[counter]);
-          }
-
-          // aktualizujem posledný index
-          lastIndex = i + 1;
-
-          // debuug
-          if (debug) {
-            Serial.print(debugs + " ");
-            Serial.println(uhol[counter] + spa);
-          }
-
-          // protekcia keby sa pošle nejakým spôsom viacej dát než arduino potrebuje
-          // a kontrola uhlov vzhľadom na min/max uhlov ruky
-          if (counter > sernum + 1) {
-            for (int i = 0; i < sernum; i++) {
-              if (uhol[i] <= serRozsah[i]) {
-                uhol[i] = serRozsah[i];
-                i++;
-              }
-              if (uhol[i] >= serRozsah[i + 1]) {
-                uhol[i] = serRozsah[i + 1];
-                i++;
-              }
-              else{
-                i++;
-              }
+            // pre posledný uhol ktorý je poslaný z pythonu v %
+            if (counter == 3) {
+              uhol[counter] = uhol[counter] * 180;
             }
-            i = input.length();
+
+            // kvôli 3 mu servu lebo je fyzicky opačne
+            if (counter == 2) {
+              uhol[counter] = (180 - uhol[counter]);
+            }
+
+            // aktualizujem posledný index
+            lastIndex = i + 1;
+
+            // debuug
+            if (debug) {
+              Serial.print(debugs + " ");
+              Serial.println(uhol[counter] + spa);
+            }
+
+            // protekcia keby sa pošle nejakým spôsom viacej dát než arduino potrebuje
+            // a kontrola uhlov vzhľadom na min/max uhlov ruky
+            if (counter > sernum + 1) {
+              for (int i = 0; i < sernum; i++) {
+                if (uhol[i] <= serRozsah[i]) {
+                  uhol[i] = serRozsah[i];
+                  i++;
+                }
+                if (uhol[i] >= serRozsah[i + 1]) {
+                  uhol[i] = serRozsah[i + 1];
+                  i++;
+                }
+                else {
+                  i++;
+                }
+              }
+              i = input.length();
+            }
+
+            // pridám 1 aby som uložil do ďaľšieho poľa v uhloch
+            counter++;
           }
 
-          // pridám 1 aby som uložil do ďaľšieho poľa v uhloch
-          counter++;
-        }
+          // posledná hodnota (milisekundy) nemajú za sebou "," tak tie musím zapísať od posledného zápisu po koniec dátového blocku
+          else if (input.length() == i + 1) {
+            milis = input.substring(lastIndex, i + 1).toInt();
 
-        // posledná hodnota (milisekundy) nemajú za sebou "," tak tie musím zapísať od posledného zápisu po koniec dátového blocku
-        else if (input.length() == i + 1) {
-          milis = input.substring(lastIndex, i + 1).toInt();
-
-          // debuUug
-          if (debug) {
-            Serial.print(debugs + " milis: ");
-            Serial.println(milis);
+            // debuUug
+            if (debug) {
+              Serial.print(debugs + " milis: ");
+              Serial.println(milis);
+            }
           }
+
         }
 
       }

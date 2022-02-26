@@ -88,7 +88,7 @@ class Axel():
         self.pos = None
         self.pos1 = None
 
-        self.ini()
+        # self.ini()
 
         if __name__ == "__main__":
             # čítanie z CSV
@@ -98,10 +98,14 @@ class Axel():
             #     time.sleep(5)
             self.pos = self.CSVr('.\positions.csv')
             self.pos1 = self.CSVr('.\positions1.csv')
-            if debug['csv']:
-                print(self.pos)
-                print(self.pos1)
 
+            if debug['csv']:
+                print(debug['gtext'] + debug['text'] + f' CSV-saved↓ \r')
+                print(f'\t{self.pos}')
+                print(f'\t{self.pos1}')
+                print('\r')
+
+        # self.mathAX2(90, 90, 0, 143, 96, 7)
 
         self.X = 90
         self.Y = 90
@@ -207,18 +211,20 @@ class Axel():
         pos = []
         with open(csvfile, 'r') as csvf:
             csv_diktionary = DictReader(csvf)
+
+            if debug['csv']:
+                print(debug['gtext'] + debug['text'] + f' CSV↓ \r')
+
             for row1 in csv_diktionary:
                 pos.append(row1)
                 if debug['csv']:
-                    print(debug['gtext'] + debug['text'] + f' CSV: \r')
                     print(debug['gtext'] + f' {row1}')
-            if debug['csv']:
-                for po in pos:
-                    print(po['X'])
-            return pos
+
+        print('\r')
+        return pos
 
 
-    def sendAxel(self, ser,gama ,alfa, beta, milis=500):
+    def sendAxel(self, ser, gama, alfa, beta, milis=500):
         c = 0
         rou = 100  # zaokruhlenie(pre posledné servo čiže chnapačky) / zjednodušenie(aby som nemusel posielať desatinné čísla) pri posielaní do sériového portu
         serdata = "heh... you failed"
@@ -252,17 +258,25 @@ class Axel():
             self.sendData = bool(1)
             if debug['0']: print("pohyb dokon čený")
 
-    def mathAX2(self,_X, _Y, _Z, base, waist, arm1, arm2, tool):  # TODO niekedy optimalizovať
+    def mathAX2(self,_X, _Y, _Z, arm1, arm2, tool, base=0):  # TODO niekedy optimalizovať
         """matika na výpočet uhlov z súradníc pre 2kĺbového robota + výpočet rotácie základne
          s Z (roboj je v zmysle že je položený a pracovnú plochu má okolo seba)"""
 
-        print(base)
+        #note base predpokladám že bude súčet base a waist (pre matiku to je v podsatate iba offset od "zeme")
+
+        if debug['math']:
+            print(debug['text'] + f' Matika-neznáme↓')
+            print(f'\t_X = {_X}')
+            print(f'\t_Y = {_Y}')
+            print(f'\t_Z = {_Z}')
+            print(f'\tbase = {base}')
+            print(f'\tarm1 = {arm1}')
+            print(f'\tarm2 = {arm2}')
+            print(f'\ttool = {tool}')
 
         X = int(_X)
-        Y = int(_Y)
+        Y = int(_Y) - (base)
         Z = int(_Z)
-
-        Y = Y - (base + waist)
 
         # vypočítam si dĺžky na výpočet matematiky
         dlzka1 = arm1
@@ -276,6 +290,8 @@ class Axel():
             Y = 1
         if Z < 80:
             Z = 80
+
+        # TODO spraviť Q_sq.... cool stuff ;)
 
         # main math
         t = dlzka2 ** 2 - dlzka1 ** 2 - X ** 2 - Y ** 2
@@ -302,7 +318,7 @@ class Axel():
 
         # debug stuff
         if debug['math'] and debug['0']:
-            print(debug['text'])
+            print(debug['text'] + f' Matika-výpočty↓')
             print(f'\tX= {X}')
             print(f'\tY= {Y}')
             print(f'\tZ= {Z}')
@@ -340,6 +356,7 @@ class Axel():
 
         return gama, alfa, beta
 
+
     def program(self, pos, ser, parametre):
         for po in pos:
             gama, alfa, beta = self.mathAX2(po['X'], po['Y'], po['Z'], parametre['base'], parametre['waist'],
@@ -361,13 +378,13 @@ class Axel():
     def cloSER(self):
         """funkcia na uzatvaranie seriovích komunikácii... ano viem mohol som použiť build in funkcie
         __enter__ a __exit__ ale bolo málo času"""
+        serdata = 'reset'
+        ar.A.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
+        ar.B.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
 
         self.A.close()
         self.B.close()
         self.joy.close()
-
-
-
 
 
 if __name__ == "__main__":
