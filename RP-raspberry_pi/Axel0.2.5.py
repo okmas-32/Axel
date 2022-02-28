@@ -73,7 +73,6 @@ class Axel():
         self.X = 300
         self.Y = 250
         self.Z = 0
-        self.rjoy = None
 
         # inicializácia
         # self.ini()
@@ -317,6 +316,7 @@ class Axel():
             print("čakám na pripojenie Arduín")
 
         print('\r\n' + '\33[92m' + 'I inicializácia Axel prostredia ukončená' + '\33[0m' + '\r\n')
+
 
 
 class arduino():
