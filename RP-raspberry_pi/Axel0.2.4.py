@@ -4,7 +4,6 @@ import serial
 import serial.tools.list_ports      # python -m serial.tools.list_ports -v
 import time
 import locale
-from glob import glob
 import asyncio
 from math import sqrt, atan2, degrees, atan
 from csv import DictReader
@@ -13,8 +12,8 @@ baud_rate = 115200
 
 debug = {
     '0': bool(1),            # celkový debug
-    'csv': bool(0),          # čítanie CSV súboru
-    'math': bool(0),         # matematika
+    'csv': bool(1),          # čítanie CSV súboru
+    'math': bool(1),         # matematika
     'ini': bool(1),          # inicializačný
     'fromser': bool(0),      # z sériového portu
     'text': '\x1b[1;33;33m' + 'debug:' + '\x1b[0m',     # samotný text "debug:"
@@ -42,7 +41,7 @@ class CustomError(Exception):
         pass
 
 class Axel():
-    def __init__(self):
+    def __init__(self, poss):
         """tu si iba určím aké parametre bude držať objekt v
         classe Axel ako napr. port v ktorom je Arduino alebo dĺžku ramena ruky"""
 
@@ -59,11 +58,9 @@ class Axel():
         self.ar2u1 = 45
         self.ar2u2 = 45
         self.ar2u3 = 45
-        self.ar2u4 = 90         #TODO aby v programe sa počítalo nie s uhlami ale s percentami (tam kde treba posielať percentá)
+        self.ar2u4 = 90
         self.ar2u5 = 90
 
-        #TODO spraviť classi pre každé Arduino aby malo v kope sériovú komunikáciu, parametre a uhli
-        #ports in serial
         self.A = serial.Serial()        # ser. pre Angie
         self.B = serial.Serial()        # ser. pre Bimbisa
         self.joy = serial.Serial()      # ser. pre joystick ale aj tak sa nepoužíva lebo ho zapína subprocess
@@ -79,33 +76,37 @@ class Axel():
         self.joyParametre = {}
 
         self.sendData = bool(1)
+        self.sendData1 = bool(1)
+
 
         #baud rate for all Arduinos
         self.baud_rate = baud_rate
 
         self.notAxel = []
 
-        self.spacer = ","               # medzera aby to Arduino vedelo prečítať
-        self.predInp = []
+        self.spacer = ","
 
-        self.pos = []
+        self.pos1 = {}
+        self.pos2 = {}
 
-        self.ini()
+        if __name__ == "__main__": # prečíta automaticky csv len ak je spustený ako hlavný program
+            self.CSVr(poss)
 
-        if __name__ == "__main__":
-            # čítanie z CSV
-            p = glob(".\*.csv")
-            csv = str(p[0])
-            # while True:
-            #     time.sleep(5)
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(self.CSVr(csv))
-            loop.close()
+            if debug['csv']:
+                print(debug['gtext'] + debug['text'] + f' CSV-saved↓ \r')
+                print(f'\t{self.pos1}')
+                print(f'\t{self.pos2}')
+                print('\r')
+
+        # self.mathAX2(90, 90, 0, 143, 96, 7)
 
         self.X = 90
         self.Y = 90
         self.Z = 0
         self.rjoy = None
+
+        # inicializácia
+        self.ini()
 
         # toto mám iba na testovanie Arduina
         #                      ↓↓ čas na pohyb v milisekundách
@@ -170,18 +171,21 @@ class Axel():
 
                             # uložím seriový port (zavriem ten starý otvorým ten nový), port (ako text) a samotné parametre
                             # danej ruky (všetky dĺžky a meno)
-                            self.A = ser
-                            ser.close()
-                            self.A.open()
-                            self.Aport = portEH[i]
-                            self.AParametre = {
-                                'name':  str(Ax[1]),
-                                'base':  int(Ax[2]),
-                                'waist': int(Ax[3]),
-                                'arm1':  int(Ax[4]),
-                                'arm2':  int(Ax[5]),
-                                'tool':  int(Ax[6])
-                            }
+
+
+
+                            # self.A = ser
+                            # ser.close()
+                            # self.A.open()
+                            # self.Aport = portEH[i]
+                            # self.AParametre = {
+                            #     'name':  str(Ax[1]),
+                            #     'base':  int(Ax[2]),
+                            #     'waist': int(Ax[3]),
+                            #     'arm1':  int(Ax[4]),
+                            #     'arm2':  int(Ax[5]),
+                            #     'tool':  int(Ax[6])
+                            # }
                         if Ax[1] == 'Bimbis:)':  # ak je Bimbis tak spravím to isté ako pri Angie (lebo oboje sú ruky)
                             if debug['0'] and debug['ini']: print(debug['gtext'] + str(portEH[i]) + f' Bimbis Arduino')
                             self.B = ser
@@ -218,26 +222,21 @@ class Axel():
                             }
 
                             # iniciuje proces 1 (p1) ako clobálne a dá mu dubprocess s python programom (joy_ReadCOM.py) + port a baud rate v ktorom pracujeme
-                            # global p1
-                            # p1 = subprocess.Popen(
-                            #         ['python', './joy_ReadCOM.py', str(self.joyPort), str(self.baud_rate)],
-                            #         stdin=subprocess.PIPE,
-                            #         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                            #
-                            # # keď je debug zapnutý tak vypíše 10 riadkov z subprocessu čo prečítal (proste či to ide)
-                            # if debug['0'] and debug['ini']:
-                            #     for _ in range(10):
-                            #         rjoy = p1.stdout.readline().decode().rstrip()
-                            #         print(debug['gtext'] + f'joyAR says: {rjoy}')
+                            global p1
+                            p1 = subprocess.Popen(
+                                    ['python', './joy_ReadCOM.py', str(self.joyPort), str(self.baud_rate)],
+                                    stdin=subprocess.PIPE,
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+                            # keď je debug zapnutý tak vypíše 10 riadkov z subprocessu čo prečítal (proste či to ide)
+                            if debug['0'] and debug['ini']:
+                                for _ in range(10):
+                                    rjoy = p1.stdout.readline().decode().rstrip()
+                                    print(debug['gtext'] + f'joyAR says: {rjoy}')
 
                         if debug['0'] and debug['ini']:
                             print(debug['gtext'] + str(Ax))
                             print('------------------------\r')
-
-                        # else:
-                        #     self.notAxel.append(portEH)
-                        #     if debug['0'] and debug['ini']:
-                        #     pass
 
                     # vypíšem Error ak nejaký nastane.. aaa pokračuje :D
                     except Exception as e:
@@ -250,25 +249,27 @@ class Axel():
                         pass
                 portsini = ports
 
-    def mathAX2(self,_X, _Y, _Z, base, waist, arm1, arm2, tool):  # TODO niekedy optimalizovať
+
+    def mathAX2(self,_X, _Y, _Z, arm1, arm2, tool, base = 0):  # TODO niekedy optimalizovať
         """matika na výpočet uhlov z súradníc pre 2kĺbového robota + výpočet rotácie základne
          s Z (roboj je v zmysle že je položený a pracovnú plochu má okolo seba)"""
 
-        X = _X
-        Y = _Y
-        Z = _Z
 
-        # dlzka2 += dlzka3
-        # X = 12
-        # Y = 1.2
-        # Z = 5
-        # dlzka1 = 14.3
-        # dlzka2 = 9.6
+        #note base predpokladám že bude súčet base a waist (pre matiku to je v podsatate iba offset od "zeme")
 
-        # súradnice ktoré poslalo Arduino pri inicializácii
+        if debug['math']:
+            print(debug['text'] + f' Matika-neznáme↓')
+            print(f'\t_X = {_X}')
+            print(f'\t_Y = {_Y}')
+            print(f'\t_Z = {_Z}')
+            print(f'\tbase = {base}')
+            print(f'\tarm1 = {arm1}')
+            print(f'\tarm2 = {arm2}')
+            print(f'\ttool = {tool}')
 
-        # znížim Y o celú základňu
-        Y -= base + waist
+        X = int(_X)
+        Y = int(_Y) - (base)
+        Z = int(_Z)
 
         # vypočítam si dĺžky na výpočet matematiky
         dlzka1 = arm1
@@ -282,6 +283,8 @@ class Axel():
             Y = 1
         if Z < 80:
             Z = 80
+
+        # TODO spraviť Q_sq.... cool stuff ;)
 
         # main math
         t = dlzka2 ** 2 - dlzka1 ** 2 - X ** 2 - Y ** 2
@@ -339,23 +342,33 @@ class Axel():
         if debug['math']: print(debug['text'], str(gama), str(alfa), str(beta))
 
         # ukladanie uhlov
-        if (base == self.AParametre['base']):
-            self.ar1u1 = gama   # uhol základni (pohyb : do ľava, do prava)
-            self.ar1u2 = alfa   # uhol na základni (pohyb : hore, dole)
-            self.ar1u3 = beta   # uhol zápestia (pohyb : hore, dole)
+        # if (arm1 == self.AParametre['base']):
+        #     self.ar1u1 = gama   # uhol základni (pohyb : do ľava, do prava)
+        #     self.ar1u2 = alfa   # uhol na základni (pohyb : hore, dole)
+        #     self.ar1u3 = beta   # uhol zápestia (pohyb : hore, dole)
+        #
+        # if (arm1 == self.BParametre['base']):
+        #     self.ar2u1 = gama
+        #     self.ar2u2 = alfa
+        #     self.ar2u3 = beta
 
-        if (base == self.BParametre['base']):
-            self.ar2u1 = gama
-            self.ar2u2 = alfa
-            self.ar2u3 = beta
+        return gama, beta, alfa
+
 
     def cloSER(self):
         """funkcia na uzatvaranie seriovích komunikácii... ano viem mohol som použiť build in funkcie
         __enter__ a __exit__ ale bolo málo času"""
 
+        serdata = 'reset'
+        if self.A.isOpen():
+            self.A.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
+        if self.B.isOpen():
+            self.B.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
+
         self.A.close()
         self.B.close()
         self.joy.close()
+
 
     def readJOY(self):
         self.joy.write(b'A\r\n')
@@ -366,24 +379,11 @@ class Axel():
     def readJOYdata(self):
         """tato funkcia je čisto na čítanie z joystick Arduina"""
 
-        # if self.rjoy is None:
-        #     self.joy.write(('1' + '\r\n').encode(locale.getpreferredencoding().rstrip()))
-        # c = self.joy.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
-        # print(c)
-        # if debug['0']:print(c)
-        # if self.rjoy != c:
-        #     if self.rjoy is None:
-        #         self.rjoy = c
-        #         return
-        #     self.rjoy = c
-        #     x = c.split(',')
-        #     print(x)
-
         # na čítanie a analýzu údajov z joy_ReadCOM.py bežiaceho v subprocese
 
         try:
             # prečíta riadok z subprocessu
-            # re = p1.stdout.readline().decode().rstrip().split(',')
+            re = p1.stdout.readline().decode().rstrip().split(',')
             for re in self.readJOY():
                 print(re)
 
@@ -468,7 +468,7 @@ class Axel():
         except Exception as e:
             CustomError(e)
 
-    async def sendAxel(self, ser, milis = 500):
+    def sendAxel(self, ser, milis = 500): #TODO dať do subprocess alebo aspoň do asyncu
         """táto funkcia slúži na zasielanie uhlov a času za ktorý sa majú servá pohnúť do Axel Arduina"""
 
         rou = 100  # zaokruhlenie(pre posledné servo čiže chnapačky) / zjednodušenie(aby som nemusel posielať desatinné čísla) pri posielaní do sériového portu
@@ -495,7 +495,7 @@ class Axel():
         # samotné posielanie dát
         ser.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
 
-        c = await ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
+        c = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
 
         # debuug stuuuf
         if debug['0']: print(c)
@@ -506,73 +506,129 @@ class Axel():
             if debug['0']:print("pohyb dokon čený")
             return
 
-    async def CSVr(self, csvfile):
+    def CSVr(self, csvfile):
+        """Na čítanie z .csv filov"""
+        pos = []
         with open(csvfile, 'r') as csvf:
-            # note  musí byť s čiarkami (",") medzi hodnotami uložené
             csv_diktionary = DictReader(csvf)
+
+            if debug['csv']:
+                print(debug['gtext'] + debug['text'] + f' CSV↓ \r')
+
+            posCount1 = 0
+            posCount2 = 0
             for row1 in csv_diktionary:
-                self.pos.append(row1)
+                print(row1)
+                if row1['ar'] == '1':
+                    posCount1 += 1
+                    self.pos1[posCount1] = {
+                        'X':row1['X'],
+                        'Y': row1['Y'],
+                        'Z': row1['Z']
+                    }
+                    print(self.pos1)
+
+                if row1['ar'] == '2':
+                    posCount2 += 1
+                    self.pos2[posCount2] = {
+                        'X':row1['X'],
+                        'Y': row1['Y'],
+                        'Z': row1['Z']
+                    }
+                    print(self.pos2)
+
+                else:pass
+
                 if debug['csv']:
-                    print(debug['gtext'] + debug['text'] + f' CSV:\r')
                     print(debug['gtext'] + f' {row1}')
+
+        print('\r')
+        return
+
+
+    def program(self, pos, ser, parametre):
+        for po in pos:
+            gama, alfa, beta = self.mathAX2(po['X'], po['Y'], po['Z'], parametre['base'], parametre['waist'],
+                         parametre['arm1'], parametre['arm2'], parametre['tool'])
+            if ser == self.A:
+                self.ar1u1 = alfa
+                self.ar1u2 = beta
+                self.ar1u3 = gama
+
+            if ser == self.B:
+                self.ar2u1 = alfa
+                self.ar2u2 = beta
+                self.ar2u3 = gama
+
+            self.sendAxel(ser, gama, alfa, beta)
+        pass
 
 
 # toto pôjde jedine ak to je spustené ako main program
 if __name__ == "__main__":
 
     # spravý prvú inicializáciu celého prostredia
-    ar = Axel()
+    object = Axel('.\positions.csv')
 
     try:
-        #TODO spraviť na checkovanie či je raspberry ready (minimálne jedna RUKA)
-        #===============finnaly the while True loop
-        while True:
-            time.sleep(0.01)
-            x = ar.readJOYdata()
-            print(x)
-            print(ar.u1)
-            print(ar.u2)
-            print(ar.u3)
-            print(ar.u4)
-            if (not ar.sendData) and ar.predInp[0]:
-                ar.sendAxel(ar.A)
 
-            if (not ar.sendData) and not ar.predInp[0]:
-                ar.sendAxel(ar.B)
+        while object.pos:
+            if object.sendData:
+                object.program(object.pos, object.A, object.AParametre)
+            if object.sendData1:
+                object.program(object.pos1, object.B, object.BParametre)
+
+            else: print("čakám na pohyb")
+
+        # #TODO spraviť na checkovanie či je raspberry ready (minimálne jedna RUKA)
+        # #===============finnaly the while True loop
+        # while True:
+        #     time.sleep(0.01)
+        #     x = object.readJOYdata()
+        #     print(x)
+        #     print(object.u1)
+        #     print(object.u2)
+        #     print(object.u3)
+        #     print(object.u4)
+        #     if (not object.sendData) and object.predInp[0]:
+        #         object.sendAxel(object.A)
+        #
+        #     if (not object.sendData) and not object.predInp[0]:
+        #         object.sendAxel(object.B)
 
     except KeyboardInterrupt: # očakáva Ctrl + C prerušenie programu
         if debug['0'] and debug['ini']:
             print('\r' + debug['text'])
-            print(debug['space'] + f'A arduino: {ar.A}')
-            print(debug['space'] + f'b arduino: {ar.B}')
-            print(debug['space'] + f'joy arduino: {ar.joy}')
-        ar.cloSER()
+            print(debug['space'] + f'A arduino: {object.A}')
+            print(debug['space'] + f'b arduino: {object.B}')
+            print(debug['space'] + f'joy arduino: {object.joy}')
+        object.cloSER()
         print(f'\nAxel bol zastavený s commandom Ctrl + C\n')
         if debug['0'] and debug['ini']:
-            print(debug['space'] + f'A arduino: {ar.A}')
-            print(debug['space'] + f'b arduino: {ar.B}')
-            print(debug['space'] + f'joy arduino: {ar.joy}')
+            print(debug['space'] + f'A arduino: {object.A}')
+            print(debug['space'] + f'b arduino: {object.B}')
+            print(debug['space'] + f'joy arduino: {object.joy}')
         sys.exit(1)
 
     except Exception as e:
-        ar.cloSER()
+        object.cloSER()
         raise CustomError(e)
         # print(f'\nExeption: ({e})')
 
     finally:# "čisté" ukončenie programu
-        ar.cloSER()
+        object.cloSER()
         if debug['0']:
             print('\r')
             print(debug['text'])
-            print(debug['space'] + str(ar.A))
-            print(debug['space'] + str(ar.Aport))
-            print(debug['space'] + str(ar.AParametre))
-            print(debug['space'] + str(ar.B))
-            print(debug['space'] + str(ar.Bport))
-            print(debug['space'] + str(ar.BParametre))
-            print(debug['space'] + str(ar.joy))
-            print(debug['space'] + str(ar.joyPort))
-            print(debug['space'] + str(ar.joyParametre))
+            print(debug['space'] + str(object.A))
+            print(debug['space'] + str(object.Aport))
+            print(debug['space'] + str(object.AParametre))
+            print(debug['space'] + str(object.B))
+            print(debug['space'] + str(object.Bport))
+            print(debug['space'] + str(object.BParametre))
+            print(debug['space'] + str(object.joy))
+            print(debug['space'] + str(object.joyPort))
+            print(debug['space'] + str(object.joyParametre))
         sys.exit(0)# "čisté" ukončenie programu
 
 #TODO dorobiť data storage pre každé AR (ukladanie údajov pri inicializácii na neskorší výpočet)

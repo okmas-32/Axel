@@ -291,8 +291,6 @@ class Axel():
         if Z < 80:
             Z = 80
 
-        # TODO spraviť Q_sq.... cool stuff ;)
-
         # main math
         t = dlzka2 ** 2 - dlzka1 ** 2 - X ** 2 - Y ** 2
 
@@ -371,7 +369,7 @@ class Axel():
                 self.ar2u2 = beta
                 self.ar2u3 = gama
 
-            self.sendAxel(ser, gama,alfa,beta)
+            self.sendAxel(ser, gama, alfa, beta)
         pass
 
 
