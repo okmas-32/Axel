@@ -13,12 +13,12 @@ spacer = ","
 
 debug = {
     '0': bool(1),            # celkový debug
-    'csv': bool(1),          # čítanie CSV súboru
-    'math': bool(0),         # matematika
+    'csv': bool(0),          # čítanie CSV súboru
+    'math': bool(1),         # matematika
     'ini': bool(1),          # inicializačný
     'fromser': bool(1),      # z sériového portu
-    'autoprogram': bool(1), # proste automatický mód
-    'zasielanie': bool(1),  # kontrola zasielania
+    'autoprogram': bool(1),  # proste automatický mód
+    'zasielanie': bool(1),   # kontrola zasielania
     'text': '\x1b[1;33;33m' + 'debug:' + '\x1b[0m',     # samotný text "debug:"
     'space': '\x1b[1;33;33m' + 'I ' + '\x1b[0m',        # žltý medzerník
     'gtext': '\33[92m' + 'I ' + '\33[0m',               # zelený medzerník
@@ -168,18 +168,18 @@ class Axel():
             print(f'\tYb= {Yb}')
 
         # konečná matematika
-        alfa = degrees(atan2(Yb, Xb))
-        beta_ = degrees(atan2(Y - Yb, X - Xb))  #nemam tucha prečo ale musí to byť takto s beta_ lebo inak to dáva iné divné čísla
-        beta = beta_ - alfa + 180
-        gama = degrees(atan(Z / X))
+        beta = degrees(atan2(Yb, Xb))
+        gama_ = degrees(atan2(Y - Yb, X - Xb))  #nemam tucha prečo ale musí to byť takto s beta_ lebo inak to dáva iné divné čísla
+        gama = gama_ - beta + 180
+        alfa = degrees(atan(Z / X))
 
         # kontrolovanie či Z súradnica je v negative ak tak sa prehodí aj uhol lebo matika je spravená aby počítala iba s kladným Z
         if Z<0:
-            gama = -gama
+            alfa = -alfa
 
-        if debug['math']: print(debug['text'], str(gama), str(alfa), str(beta))
+        if debug['math']: print(debug['text'], str(alfa), str(beta), str(gama))
 
-        return gama, alfa, beta
+        return alfa, beta, gama
 
 
     def CSVr(self, csvfile):
@@ -221,14 +221,13 @@ class Axel():
 
 
     def autoMove(self, loop=0):
+        zap_grip = 0, 0
         for i in self.pos1:
             if debug['autoprogram']:
                 print(f'Suradnice 1: {self.pos1[i]}')
                 print(f'Suradnice 2: {self.pos2[i]}')
 
-            self.Angi.sendAxel(
-                    [
-                        self.mathAX2(
+            alfa, beta, gama = self.mathAX2(
                             self.pos1[i]['X'],
                             self.pos1[i]['Y'],
                             self.pos1[i]['Z'],
@@ -236,25 +235,33 @@ class Axel():
                             self.Angi.parametre['info']['arm2'],
                             self.Angi.parametre['info']['tool'],
                             self.Angi.parametre['info']['waist'] + self.Angi.parametre['info']['base']
-                        ),
-                        0   #hook / gripper? / hák
-                    ]
+                    )
+            print(alfa, beta, gama)
+
+            self.Angi.sendAxel(
+                    self.mathAX2(
+                            self.pos1[i]['X'],
+                            self.pos1[i]['Y'],
+                            self.pos1[i]['Z'],
+                            self.Angi.parametre['info']['arm1'],
+                            self.Angi.parametre['info']['arm2'],
+                            self.Angi.parametre['info']['tool'],
+                            self.Angi.parametre['info']['waist'] + self.Angi.parametre['info']['base']
+                    ).append(0)   #hook / gripper? / hák
+
 
             )
+            zap_grip = 0, 0
             self.Bimb.sendAxel(
-                    [
-                        self.mathAX2(
-                                self.pos1[i]['X'],
-                                self.pos1[i]['Y'],
-                                self.pos1[i]['Z'],
-                                self.Angi.parametre['info']['arm1'],
-                                self.Angi.parametre['info']['arm2'],
-                                self.Angi.parametre['info']['tool'],
-                                self.Angi.parametre['info']['waist'] + self.Angi.parametre['info']['base']
-                        ),
-                        0,  # zápästie
-                        0   # gripper "zatvorenosť"
-                    ]
+                    self.mathAX2(
+                            self.pos1[i]['X'],
+                            self.pos1[i]['Y'],
+                            self.pos1[i]['Z'],
+                            self.Angi.parametre['info']['arm1'],
+                            self.Angi.parametre['info']['arm2'],
+                            self.Angi.parametre['info']['tool'],
+                            self.Angi.parametre['info']['waist'] + self.Angi.parametre['info']['base']
+                    ).extend(zap_grip) # zápästie a gripper "zatvorenosť"
             )
             if loop and len(self.pos1) == i+1:
                 i = 1
@@ -360,7 +367,7 @@ class Axel():
             time.sleep(1)
             print("čakám na pripojenie Arduín")
 
-        print('\r\n' + '\33[92m' + 'I inicializácia Axel prostredia je ukončená' + '\33[0m' + '\r\n')
+        if ((self.Aport and self.Bport) and self.joyPort): print('\r\n' + debug['gtext'] + debug['gtext'] + debug['gtext'] + '\33[92m' + ' inicializácia Axel prostredia je ukončená' + '\33[0m' + '\r\n')
 
 
 class arduino():
@@ -371,8 +378,6 @@ class arduino():
 
             self.serPort.flushInput()
             self.name = parametre[1]
-
-            print(f'port {self.name} otoreny {self.serPort.isOpen()}')
             self.sendData = bool(0)
 
             print(parametre)
@@ -413,33 +418,33 @@ class arduino():
 
             self.sendAxel(self.parametre['uhly'], 2000)
 
-            if debug['ini']: print(debug['gtext'] + f'inicializácia {parametre[1]} hotová')
+            if debug['ini'] and self.sendData: print(debug['gtext'] + debug['gtext'] + f'inicializácia {parametre[1]} hotová')
 
 
         def sendAxel(self, data, milis=1500): #TODO dať do subprocess alebo aspoň do asyncu
             """táto funkcia slúži na zasielanie uhlov a času za ktorý sa majú servá pohnúť do Axel Arduina"""
 
 
-            if debug['zasielanie']: print(f'data v send Data = {data}')
+            if debug['zasielanie']: print(f'\rdata v send Data = {data}')
 
             rou = 100  # zaokruhlenie(pre posledné servo čiže chnapačky) / zjednodušenie(aby som nemusel posielať desatinné čísla) pri posielaní do sériového portu
             serdata = "heh... you failed"
             if self.name == 'Angie':
                 # zostaviť sériové dáta
-                serdata = str(round(((data[0])), 2) * rou) + spacer + \
-                          str(round(((data[1])), 2) * rou) + spacer + \
-                          str(round(((data[2])), 2) * rou) + spacer + \
-                          str(round(((data[3])), 2) / 180 * 100) + spacer + \
-                          str(milis)
+                serdata = ((str(round(int((data[0])), 2) * rou) if (int(data[0]) != 0) else str(0)) + spacer +
+                           (str(round(int((data[1])), 2) * rou) if (int(data[1]) != 0) else str(0)) + spacer +
+                           (str(round(int((data[2])), 2) * rou) if (int(data[2]) != 0) else str(0)) + spacer +
+                           (str(round(int((data[3])), 2) / 180 * 100) if (int(data[3]) != 0) else str(0)) + spacer +
+                           str(milis))
                 data.pop()
 
             elif self.name == 'Bimbis:)':
-                serdata = str(round(((data[0])), 2) * rou) + spacer + str(         # prvý uhol
-                            round(((data[1])), 2) * rou) + spacer + str(           # druhý uhol (ktorý sa preopčítavá na dve servá v Arduine)
-                            round(((data[2])), 2) * rou) + spacer + str(           # tretí uhol ktorý má limiter na arduine na min 90°
-                            round(((data[3])), 2) / 180 * 100) + spacer + str(     # zápästie
-                            round(((data[4])), 2) / 180 * 100) + spacer + str(     # toola ktorá má tiež v Arduine svoje minimum a Maximum
-                            milis)
+                serdata = ((str(round(int((data[0])), 2) * rou) if (int(data[0]) != 0) else str(0)) + spacer + str(         # prvý uhol
+                        (round(int((data[1])), 2) * rou) if (int(data[1]) != 0) else str(0)) + spacer + str(           # druhý uhol (ktorý sa preopčítavá na dve servá v Arduine)
+                        (round(int((data[2])), 2) * rou) if (int(data[2]) != 0) else str(0)) + spacer + str(           # tretí uhol ktorý má limiter na arduine na min 90°
+                        (round(int((data[3])), 2) / 180 * 100) if (int(data[3]) != 0) else str(0)) + spacer + str(     # zápästie
+                        (round(int((data[4])), 2) / 180 * 100) if (int(data[4]) != 0) else str(0)) + spacer + str(     # toola ktorá má tiež v Arduine svoje minimum a Maximum
+                            milis))
                 data.pop()
             else:
                 CustomError("neviem kde ale musíš zadať správne arduino na ktoré chceš poslať dáta")
@@ -448,13 +453,14 @@ class arduino():
 
             while not self.sendData:
                 self.serPort.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
+                time.sleep((milis-50)/1000)
                 c = self.serPort.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
-                if debug['0']: print(c)
+                if debug['autoprogram']: print(debug['gtext'] + f'pohyb dokončený z Arduina?: {c}')
                 if c == '1':
                     self.sendData = bool(1)
-                    if debug['0']: print("pohyb dokon čený")
+                    if debug['autoprogram']: print(debug['gtext'] + f"pohyb dokončený\r\n")
                 else:
-                    print('reeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee')
+                    print('\x1b[1;33;33m' + 'čakanie na dokončenie pohybu' + '\x1b[0m')
                     print(c + '\n')
                     self.serPort.flushInput()
 
