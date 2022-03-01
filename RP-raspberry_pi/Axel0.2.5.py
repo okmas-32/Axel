@@ -13,10 +13,12 @@ spacer = ","
 
 debug = {
     '0': bool(1),            # celkový debug
-    'csv': bool(0),          # čítanie CSV súboru
-    'math': bool(1),         # matematika
+    'csv': bool(1),          # čítanie CSV súboru
+    'math': bool(0),         # matematika
     'ini': bool(1),          # inicializačný
     'fromser': bool(1),      # z sériového portu
+    'autoprogram': bool(1), # proste automatický mód
+    'zasielanie': bool(1),  # kontrola zasielania
     'text': '\x1b[1;33;33m' + 'debug:' + '\x1b[0m',     # samotný text "debug:"
     'space': '\x1b[1;33;33m' + 'I ' + '\x1b[0m',        # žltý medzerník
     'gtext': '\33[92m' + 'I ' + '\33[0m',               # zelený medzerník
@@ -68,6 +70,8 @@ class Axel():
                 print(debug['gtext'] + debug['text'] + f' CSV-saved↓ \r')
                 print(f'\t{self.pos1}')
                 print(f'\t{self.pos2}')
+                print(f'počet príkazov z CSV pre 1: {len(self.pos1)}')
+                print(f'počet príkazov z CSV pre 2: {len(self.pos2)}')
                 print('\r')
 
         self.X = 300
@@ -166,7 +170,7 @@ class Axel():
         # konečná matematika
         alfa = degrees(atan2(Yb, Xb))
         beta_ = degrees(atan2(Y - Yb, X - Xb))  #nemam tucha prečo ale musí to byť takto s beta_ lebo inak to dáva iné divné čísla
-        beta =  beta_ - alfa + 180
+        beta = beta_ - alfa + 180
         gama = degrees(atan(Z / X))
 
         # kontrolovanie či Z súradnica je v negative ak tak sa prehodí aj uhol lebo matika je spravená aby počítala iba s kladným Z
@@ -216,8 +220,44 @@ class Axel():
         return
 
 
-    def autoMove(self):
-        pass
+    def autoMove(self, loop=0):
+        for i in self.pos1:
+            if debug['autoprogram']:
+                print(f'Suradnice 1: {self.pos1[i]}')
+                print(f'Suradnice 2: {self.pos2[i]}')
+
+            self.Angi.sendAxel(
+                    [
+                        self.mathAX2(
+                            self.pos1[i]['X'],
+                            self.pos1[i]['Y'],
+                            self.pos1[i]['Z'],
+                            self.Angi.parametre['info']['arm1'],
+                            self.Angi.parametre['info']['arm2'],
+                            self.Angi.parametre['info']['tool'],
+                            self.Angi.parametre['info']['waist'] + self.Angi.parametre['info']['base']
+                        ),
+                        0   #hook / gripper? / hák
+                    ]
+
+            )
+            self.Bimb.sendAxel(
+                    [
+                        self.mathAX2(
+                                self.pos1[i]['X'],
+                                self.pos1[i]['Y'],
+                                self.pos1[i]['Z'],
+                                self.Angi.parametre['info']['arm1'],
+                                self.Angi.parametre['info']['arm2'],
+                                self.Angi.parametre['info']['tool'],
+                                self.Angi.parametre['info']['waist'] + self.Angi.parametre['info']['base']
+                        ),
+                        0,  # zápästie
+                        0   # gripper "zatvorenosť"
+                    ]
+            )
+            if loop and len(self.pos1) == i+1:
+                i = 1
 
 
     def ini(self):
@@ -281,7 +321,7 @@ class Axel():
                                 self.Angi = arduino.ruka(Ax, start, ser)
                                 self.Aport = bool(1)
 
-                            if Ax[1] == 'Bimbis:)':  # ak je Bimbis tak spravím to isté ako pri Angie (lebo oboje sú ruky)
+                            elif Ax[1] == 'Bimbis:)':  # ak je Bimbis tak spravím to isté ako pri Angie (lebo oboje sú ruky)
                                 if debug['0'] and debug['ini']: print(debug['gtext'] + str(portEH[i]) + f' Bimbis Arduino')
 
                                 ser.close()
@@ -289,7 +329,7 @@ class Axel():
                                 self.Bimb = arduino.ruka(Ax, start, ser)
                                 self.Bport = bool(1)
 
-                            if Ax[1] == 'joy':  # ak Arduino pošle že je joystick
+                            elif Ax[1] == 'joy':  # ak Arduino pošle že je joystick
                                 # debuuuug
                                 if debug['0'] and debug['ini']: print(debug['gtext'] + f'{portEH[i]} joystick Arduino')
 
@@ -297,9 +337,14 @@ class Axel():
                                 self.Joy = arduino.joy(Ax, ser)
                                 self.joyPort = bool(1)
 
+                            else:
+                                ser.close()
+                                pass
+
                             if debug['0'] and debug['ini']:
                                 print(debug['gtext'] + str(Ax))
                                 print('------------------------\r\n')
+
 
                         # vypíšem Error ak nejaký nastane.. aaa pokračuje :D
                         except Exception as e:
@@ -315,8 +360,7 @@ class Axel():
             time.sleep(1)
             print("čakám na pripojenie Arduín")
 
-        print('\r\n' + '\33[92m' + 'I inicializácia Axel prostredia ukončená' + '\33[0m' + '\r\n')
-
+        print('\r\n' + '\33[92m' + 'I inicializácia Axel prostredia je ukončená' + '\33[0m' + '\r\n')
 
 
 class arduino():
@@ -324,7 +368,13 @@ class arduino():
         def __init__(self, parametre, zaklad, serPort = serial.Serial()):
             self.serPort = serPort
             self.serPort.open()
+
+            self.serPort.flushInput()
             self.name = parametre[1]
+
+            print(f'port {self.name} otoreny {self.serPort.isOpen()}')
+            self.sendData = bool(0)
+
             print(parametre)
             self.parametre = {
                 'info': {
@@ -347,7 +397,8 @@ class arduino():
                     0
                 ]
             }
-            if self.name == 'Bimbis:)':
+
+            if self.name == 'Bimbis:)': #pre gripper
                 self.parametre['uhly'].append(0)
 
             self.parametre['uhly'][0], self.parametre['uhly'][1], self.parametre['uhly'][2] = object.mathAX2(
@@ -360,50 +411,53 @@ class arduino():
                     self.parametre['info']['base'] + self.parametre['info']['waist']
             )
 
-            self.sendAxel(self.parametre['uhly'], 1000)
+            self.sendAxel(self.parametre['uhly'], 2000)
 
             if debug['ini']: print(debug['gtext'] + f'inicializácia {parametre[1]} hotová')
 
 
-        def sendAxel(self, data, milis=500): #TODO dať do subprocess alebo aspoň do asyncu
+        def sendAxel(self, data, milis=1500): #TODO dať do subprocess alebo aspoň do asyncu
             """táto funkcia slúži na zasielanie uhlov a času za ktorý sa majú servá pohnúť do Axel Arduina"""
+
+
+            if debug['zasielanie']: print(f'data v send Data = {data}')
 
             rou = 100  # zaokruhlenie(pre posledné servo čiže chnapačky) / zjednodušenie(aby som nemusel posielať desatinné čísla) pri posielaní do sériového portu
             serdata = "heh... you failed"
             if self.name == 'Angie':
-
                 # zostaviť sériové dáta
-                serdata = str(int(round(data[0], 2) * rou)) + spacer + \
-                          str(int(round(data[1], 2) * rou)) + spacer + \
-                          str(int(round(data[2], 2) * rou)) + spacer + \
-                          str(int(round(data[3], 2) / 180 * 100)) + spacer + \
+                serdata = str(round(((data[0])), 2) * rou) + spacer + \
+                          str(round(((data[1])), 2) * rou) + spacer + \
+                          str(round(((data[2])), 2) * rou) + spacer + \
+                          str(round(((data[3])), 2) / 180 * 100) + spacer + \
                           str(milis)
+                data.pop()
+
             elif self.name == 'Bimbis:)':
-                serdata = str(
-                            int(round(data[0], 2) * rou)) + spacer + str(           # prvý uhol
-                            int(round(data[1], 2) * rou)) + spacer + str(           # druhý uhol (ktorý sa preopčítavá na dve servá v Arduine)
-                            int(round(data[2], 2) * rou)) + spacer + str(           # tretí uhol ktorý má limiter na arduine na min 90°
-                            int(round(data[3], 2) / 180 * 100)) + spacer + str(     # zápästie
-                            int(round(data[4], 2) / 180 * 100)) + spacer + str(     # toola ktorá má tiež v Arduine svoje minimum a Maximum
+                serdata = str(round(((data[0])), 2) * rou) + spacer + str(         # prvý uhol
+                            round(((data[1])), 2) * rou) + spacer + str(           # druhý uhol (ktorý sa preopčítavá na dve servá v Arduine)
+                            round(((data[2])), 2) * rou) + spacer + str(           # tretí uhol ktorý má limiter na arduine na min 90°
+                            round(((data[3])), 2) / 180 * 100) + spacer + str(     # zápästie
+                            round(((data[4])), 2) / 180 * 100) + spacer + str(     # toola ktorá má tiež v Arduine svoje minimum a Maximum
                             milis)
+                data.pop()
             else:
                 CustomError("neviem kde ale musíš zadať správne arduino na ktoré chceš poslať dáta")
 
-            # debuuuuug
-            if debug['0']:print(serdata)
+            if debug['zasielanie']: print(f'posielanie dat = {serdata}')
 
-            # samotné posielanie dát
-            self.serPort.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
+            while not self.sendData:
+                self.serPort.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
+                c = self.serPort.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
+                if debug['0']: print(c)
+                if c == '1':
+                    self.sendData = bool(1)
+                    if debug['0']: print("pohyb dokon čený")
+                else:
+                    print('reeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee')
+                    print(c + '\n')
+                    self.serPort.flushInput()
 
-            c = self.serPort.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
-
-            # debuug stuuuf
-            if debug['0']: print(c)
-
-            # keď prečíta 1 reprezentujúcu "koniec pohybu" z arduina tak vypíše a zapíše do dát
-            if c == '1':
-                self.sendData = bool(1)
-                if debug['0']:print("pohyb dokon čený")
 
 
         def __exit__(self, exc_type=0, exc_val=0, exc_tb=0):
@@ -457,13 +511,17 @@ class arduino():
                     ('{} = {}'.format(item, self.__dict__[item]) for item in self.__dict__))
 
 
-
 # toto pôjde jedine ak to je spustené ako main program
 if __name__ == "__main__":
 
     # spravý prvú inicializáciu celého prostredia
+
+    # note v Raspberry sa musí vymeniť "\" za "/"... nepítaj sa prečo iba to sprav
     object = Axel('.\positions.csv')
     object.ini()
+
+    object.autoMove(1)
+
 
     try:
         # #TODO spraviť na checkovanie či je raspberry ready (minimálne jedna RUKA)
@@ -481,6 +539,8 @@ if __name__ == "__main__":
         #
         #     if (not object.sendData) and not object.predInp[0]:
         #         object.sendAxel(object.B)
+
+
 
         print(object.Angi.name)
         print(object.Bimb.name)
@@ -504,8 +564,8 @@ if __name__ == "__main__":
         if debug['0'] and debug['ini']:
             print('\r' + debug['text'])
             print(debug['space'] + f'Angie arduino je zatvorene: {not object.Angi.serPort.isOpen()}')
-            print(debug['space'] + f'Bimb arduino je otvorene: {not object.Bimb.serPort.isOpen()}')
-            print(debug['space'] + f'joy arduino je otvorene: {not object.Joy.serPort.isOpen()}')
+            print(debug['space'] + f'Bimb arduino je zatvorene: {not object.Bimb.serPort.isOpen()}')
+            print(debug['space'] + f'joy arduino je zatvorene: {not object.Joy.serPort.isOpen()}')
         raise CustomError(e)
         # print(f'\nExeption: ({e})')
 

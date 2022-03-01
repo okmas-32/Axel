@@ -10,11 +10,13 @@ try:
     if ser.isOpen():
         ser.close()
     ser.open()
+    ser.flushInput()
 
     sys.stdout.write(ser)
 
     #prečítam čo mi napísal z jeho setup()
     ser.readline()
+    ser.flushInput()
 
     #napíšem mu 1 aby začal s posielaním dát o joisticku
     b = b'A\r\n'
