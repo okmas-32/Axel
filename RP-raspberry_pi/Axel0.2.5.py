@@ -196,7 +196,7 @@ class Axel():
         gama = gama_ - beta + 180
 
         dlzka = ((((X) - (Xbase)) ** 2) + (((Y) - (Ybase)) ** 2)) ** (1 / 2)
-        
+
         rad = atan2(((Y) - (Ybase)) ** 2, (((X) - (Xbase)) ** 2))
         alfa = degrees(rad)
 
