@@ -191,6 +191,10 @@ void loop() {//========================================loop
 
             uhol[counter] = input.substring(lastIndex, i).toFloat() / 100;
 
+            if (counter == 0) {
+              uhol[counter] = uhol[counter] + 90;
+            }
+            
             if (counter == 2) {
               uhol[counter] = (180 - uhol[counter]);
               if (uhol[counter] < 90) {
@@ -261,6 +265,10 @@ void loop() {//========================================loop
   if (loo and ndone) {
     movMe(servo, uhol, (sizeof(uhol) / 2) / 2, milis, beta, (sizeof(beta) / 2) / 2);
     loo = ((uhol[0] != beta[0]) or (uhol[1] != beta[1]) or ((uhol[3] != beta[3]) or (uhol[2] != beta[2])) or ((uhol[4] != beta[4]) or (uhol[5] != beta[5])));
+  }
+  else{
+    Serial.println("1");
+    delay(150);
   }
 
 }

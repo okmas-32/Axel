@@ -214,6 +214,11 @@ void loop() {//=============================================loop
               uhol[counter] = (180 - uhol[counter]);
             }
 
+            // pracovné prostredie má servo 0-180 nie 0+-90
+            if (counter == 0) {
+              uhol[counter] = uhol[counter] + 90;
+            }
+
             // aktualizujem posledný index
             lastIndex = i + 1;
 
@@ -291,4 +296,9 @@ void loop() {//=============================================loop
     // kontrolujem ďaľej uhli
     loo = (((uhol[0] != beta[0]) or (uhol[1] != beta[1]) or ((uhol[3] != beta[3]) or (uhol[2] != beta[2]))));
   }
+  else{
+    Serial.println("1");
+    delay(150);
+  }
+  
 }
