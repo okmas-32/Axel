@@ -41,25 +41,29 @@ void setup() {//========================================setup
   // začať sériovú(USB) kominikáciu
   Serial.begin(SERIAL_BAUD);
 
-  while (!Serial) { // do budúcna keď bude nejaké ukladanie programov
-    // aktuálne nič nerobý lebo to aj tak zapájame len cez USB
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(200);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(200);
-  }
-
   // zasielanie všetkých potrebných parametrov
   Serial.print(serStart);
   Serial.print(base + spa + waist + spa + arm1 + spa + arm2 + spa + hook);
   Serial.print('\n');
 
+  int count = 0;
+  // celé spravím iba ak chcem servamy hýbať servami (pre debug)
   if (ARMservo) {
     // inicializácia pinov a zasielanie pinom pozíciu 90°
     for (int i = 0; i < NUM_SERVOS; i++) {
+      // attatchnem predurčený pin k objektu servo
       servo[i].attach(pinsetup[i]);
       delay(20);
-      servo[i].write(90);           // záleží na serve.. môže byť nebezpečné!!!
+      
+      // voči sercu maximu↓ odpočítam minimum↓ a videlím dvomi↓
+      int uhol = ( serRozsah[count] - serRozsah[count+1] ) / 2;
+      count = count+2;
+
+      // uložím aby som vedel kde je servo
+      beta[i] = uhol;
+
+      // vpíšem vypočítaný uhol do serva
+      servo[i].write(uhol);
     }
   }
 }
@@ -100,22 +104,18 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
 
     // ak sú aktuálne milisekundy mínus predošlé milisekundy väčšie alebo rovné oneskoreniu
     if ((aktMill - predMill) >= oneskorenie) {
-
       // loopnem toľko krát koľko mám sérv
       for (int i = 0; i < sernum; i++) {
-
         // ak čas od začiatku programu je väčší ako zadaný
         if (t > cas) {
-
           // uhol serva dám na poslanú hodnotu
           uh[i] = uhol[i];
         }
-
         // vpisovanie vypočítaných uhlov do daného serva
         if (ARMservo) {
           servo[i].write(uh[i]);
         }
-
+        
         // debuuuug
         if (debug) {
           Serial.print(debugs);
@@ -135,7 +135,7 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
     }
 
     // ak čas od začiatku programu je väčší ako zadaný čas
-    if (t > cas) {
+    if (aktMill > cas) {
 
       // idem cez všetky uhly
       for (int i = 0; i < sernum; i++) {

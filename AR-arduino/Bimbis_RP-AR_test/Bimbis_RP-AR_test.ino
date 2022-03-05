@@ -41,21 +41,14 @@ void setup() {//========================================setup
   Serial.print(base + spa + waist + spa + arm1 + spa + arm2 + spa + hook);
   Serial.print('\n');
 
+   int count = 0;
   if (ARMservo) {
-    for (int i = 0; i < sernum; i++) {
+    for (int i = 0; i < NUM_SERVOS; i++) {
       servo[i].attach(pinsetup[i]);
       delay(20);
-
-      if (debug) {
-        Serial.println(pinsetup[i]);
-      }
-
-      if (i == 5) {
-        servo[i].write(150);
-      }
-      else {
-        servo[i].write(90);
-      }
+      int uhol = (serRozsah[count]-serRozsah[count+1]) / 2 ;
+      count = count+2;
+      servo[i].write(uhol);
     }
   }
   if (debug) {

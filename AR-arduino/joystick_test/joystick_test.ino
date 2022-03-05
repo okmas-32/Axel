@@ -59,7 +59,7 @@ void loop() {
       }
 
       // alebo A
-      if (rec == 'A') { // pre istotu keby nejde 1 lebo to môže tiež poslaž ako boolian... môže sa stať
+      if (rec == 'A') { // pre debug
         armME = true;
       }
       else {
