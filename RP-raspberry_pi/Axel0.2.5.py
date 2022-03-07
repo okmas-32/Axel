@@ -28,6 +28,9 @@ debug = {
 }
 
 
+class OSErr(OSError):
+    pass
+
 class CustomError(Exception):
     """môj vlastný error handler.. spravil som ho hľavne kvôli tomu
      aby som vedel zachitiť errori ale aj kvôli tomu že to bola sranda naprogramovať"""
@@ -231,60 +234,40 @@ class Axel():
         return
 
 
-    def autoMove(self, loop=0):
+    def autoMove(self, loop=1):
         zap_grip = [0, 0]       # zápästie a gripper "zatvorenosť"
         hook = 0                #hook / gripper? / hák
-        for i in self.pos1:
-            if debug['auto-program']:
-                print(f'číslo pohybu = {i}')
-                print(f'Suradnice 1: {self.pos1[i]}')
-                print(f'Suradnice 2: {self.pos2[i]}')
-
-            # výpočty uhlov
-            alfa1, beta1, gama1 = self.mathAX2(
-                    self.pos1[i]['X'],
-                    self.pos1[i]['Y'],
-                    self.pos1[i]['Z'],
-                    self.Angi.parametre['info']['arm1'],
-                    self.Angi.parametre['info']['arm2'],
-                    self.Angi.parametre['info']['tool'],
-                    self.Angi.parametre['info']['waist'] + self.Angi.parametre['info']['base']
-            )
-
-            alfa2, beta2, gama2 = self.mathAX2(
-                    self.pos2[i]['X'],
-                    self.pos2[i]['Y'],
-                    self.pos2[i]['Z'],
-                    self.Angi.parametre['info']['arm1'],
-                    self.Angi.parametre['info']['arm2'],
-                    self.Angi.parametre['info']['tool'],
-                    self.Angi.parametre['info']['waist'] + self.Angi.parametre['info']['base']
-            )
-
-            if self.Angi.sendData:
-                self.Angi.sendData = False
-                # zasielanie uhlov
-                self.Angi.sendAxel(
-                        [
-                            alfa1,
-                            beta1,
-                            gama1,
-                            hook
-                        ]
+        while loop:
+            for i in self.pos1:
+                if debug['auto-program']:
+                    print(f'číslo pohybu = {i}')
+                    print(f'Suradnice 1: {self.pos1[i]}')
+                    print(f'Suradnice 2: {self.pos2[i]}')
+                # výpočty uhlov
+                alfa1, beta1, gama1 = self.mathAX2(self.pos1[i]['X'],
+                        self.pos1[i]['Y'],self.pos1[i]['Z'],
+                        self.Angi.parametre['info']['arm1'],
+                        self.Angi.parametre['info']['arm2'],
+                        self.Angi.parametre['info']['tool'],
+                        self.Angi.parametre['info']['waist'] +
+                        self.Angi.parametre['info']['base']
                 )
-
-            if self.Bimb.sendData:
-                self.Bimb.sendData = False
-                self.Bimb.sendAxel(
-                        [
-                            alfa2,
-                            beta2,
-                            gama2,
-                            zap_grip[0],
-                            zap_grip[1]
-                        ]
+                alfa2, beta2, gama2 = self.mathAX2(self.pos2[i]['X'],
+                        self.pos2[i]['Y'],self.pos2[i]['Z'],
+                        self.Angi.parametre['info']['arm1'],
+                        self.Angi.parametre['info']['arm2'],
+                        self.Angi.parametre['info']['tool'],
+                        self.Angi.parametre['info']['waist'] +
+                        self.Angi.parametre['info']['base']
                 )
-        print('\33[92m' + ' auto-program ukončený ' + '\33[0m')
+                if self.Angi.sendData:
+                    self.Angi.sendData = False
+                    # zasielanie uhlov
+                    self.Angi.sendAxel([alfa1,beta1,gama1,hook])
+                if self.Bimb.sendData:
+                    self.Bimb.sendData = False
+                    self.Bimb.sendAxel([alfa2,beta2,gama2,zap_grip[0],zap_grip[1]])
+        if debug['auto-program']: print('\33[92m' + ' auto-program ukončený ' + '\33[0m')
 
 
     def ini(self):
@@ -495,13 +478,14 @@ class arduino():
             return str(self.__class__) + '\n' + '\n'.join(
                     ('{} = {}'.format(item, self.__dict__[item]) for item in self.__dict__))
 
-
     class joy():
         def __init__(self, parametre, serPort=serial.Serial()):
             self.serPort = serPort
             self.name = parametre[1]
+            self.serPort.close()
 
-            # iniciuje proces 1 (p1) ako clobálne a dá mu dubprocess s python programom (joy_ReadCOM.py) + port a baud rate v ktorom pracujeme
+            # iniciuje proces 1 (p1) ako clobálne a dá mu dubprocess s python programom
+            # (joy_ReadCOM.py) + port a baud rate v ktorom pracujeme
             global p1
             p1 = subprocess.Popen(
                     ['python', './joy_ReadCOM.py', str(self.serPort.name), str(self.serPort._baudrate)],
@@ -538,13 +522,24 @@ if __name__ == "__main__":
 
     # spravý prvú inicializáciu celého prostredia
 
-    # note v Raspberry sa musí vymeniť "\" za "/"... nepítaj sa prečo iba to sprav
-    object = Axel('.\positions.csv')
+    zlom = 'ty máš Mac?? -.-'
+    try:# note v Raspberry sa musí vymeniť "\" za "/"... nepítaj sa prečo iba to sprav
+        if sys.platform == '':
+            zlom = '\\'
+        elif sys.platform.startswith('linux'):
+            zlom = '/'
+        else:
+            raise OSErr
+
+    except OSErr:
+        print(debug['Error'] + 'tento program nepodporuje iné systémi ako Windows a Linux' + debug['Error'])
+        print(zlom)
+        sys.exit(1)
+
+    object = Axel('.' + zlom + 'positions.csv')
 
     # inicializácia Axel prostredia
     object.ini()
-
-    print(object.Angi.serPort)
 
     object.autoMove(1)
 

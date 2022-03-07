@@ -1,3 +1,6 @@
+všetok aktuálny kód je na stránke https://github.com/okmas-32/Axel
+
+
 postup:
 
 	nainštalovanie:
