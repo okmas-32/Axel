@@ -9,5 +9,3 @@ v programe som nikde nepoužil delay() dôvod:
 musel som použiť baudrate 115200 inak by to nestíhalo taký veľký nával dát naraz (posielam cca 40ch raz a potom čakám)
 
 !!!Arduino nano používa ATmega328P (old bootloader)
-:3
-hello

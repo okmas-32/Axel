@@ -110,14 +110,13 @@ class Axel():
 
         # self.mathAX2(self.X, self.Y, self.Z, 143, 96, 7)
 
-
     def mathAX2(self, Xi, Yi, Zi, arm1, arm2, tool, base, Xbase=0, Ybase=0, Zbase=0):
         """matika na výpočet uhlov z súradníc pre 2kĺbového robota + výpočet rotácie základne
          s Z (roboj je v zmysle že je položený a pracovnú plochu má okolo seba)"""
         # TODO niekedy optimalizovať
         # TODO spraviť pre celé pracovisko (offsety)
 
-        #note base predpokladám že bude súčet base a waist (pre matiku to je v podsatate iba offset od "zeme")
+        # note base predpokladám že bude súčet base a waist (pre matiku to je v podsatate iba offset od "zeme")
         if debug['math'] and debug['mathEX']:
             print(debug['text'] + f' Matika-neznáme↓')
             print(f'\t_X = {Xi}')
@@ -127,6 +126,15 @@ class Axel():
             print(f'\tarm1 = {arm1}')
             print(f'\tarm2 = {arm2}')
             print(f'\ttool = {tool}')
+
+        elif Xi < 80:
+            Xi = 80
+        elif Yi < 80:
+            Yi = 1
+        elif Zi < 1 - base:
+            Zi = 80
+        else:
+            pass
         X = int(Xi)
         Y = int(Yi) - (base)
         Z = int(Zi)
@@ -134,13 +142,8 @@ class Axel():
         dlzka1 = arm1
         dlzka2 = arm2 + tool
         # skontrolovanie či sú všetky súradnice v dosahu ak nie tak ich prepíše na najbližšie v dosahu
-        #TODO spraiviť dosah automaticky vypočítaný nie manuálne napísaný
-        if X < 80:
-            X = 80
-        if Y < 1 - base:
-            Y = 1
-        if Z < 80:
-            Z = 80
+        # TODO spraiviť dosah automaticky vypočítaný nie manuálne napísaný
+
         # TODO spraviť Q_sq.... cool stuff ;)
 
         # main math
@@ -183,9 +186,15 @@ class Axel():
         # nemam tucha prečo ale musí to byť takto s beta_ lebo inak to dáva iné divné čísla
         gama_ = degrees(atan2(Y - Yb, X - Xb))
         gama = gama_ - beta + 180
-        dlzka = ((((X) - (Xbase)) ** 2) + (((Y) - (Ybase)) ** 2)) ** (1 / 2)
-        rad = atan2(((Y) - (Ybase)) ** 2, (((X) - (Xbase)) ** 2))
+
+        deltaZ = ((Z) - (Zbase)) ** 2
+        deltaX = ((X) - (Xbase)) ** 2
+        dlzka = ((((X) - (Xbase)) ** 2) + (((Z) - (Zbase)) ** 2)) ** (1 / 2)
+        rad = atan2(deltaZ, deltaX)
         alfa = degrees(rad)
+
+        if Z < 0:
+            alfa = alfa * (-1)
         # alfa_ = atan(abs(Z) / X)
         # alfa = degrees(alfa_)
 
@@ -524,7 +533,7 @@ if __name__ == "__main__":
 
     zlom = 'ty máš Mac?? -.-'
     try:# note v Raspberry sa musí vymeniť "\" za "/"... nepítaj sa prečo iba to sprav
-        if sys.platform == '':
+        if sys.platform == 'win32':
             zlom = '\\'
         elif sys.platform.startswith('linux'):
             zlom = '/'

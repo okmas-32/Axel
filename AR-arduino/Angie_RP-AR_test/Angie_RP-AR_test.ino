@@ -25,11 +25,12 @@ String debugs = "debug:";
 
 float uhol[sernum] = {0, 0, 0, 0};
 float beta[sernum] = {0, 0, 0, 0};
-int milis;
+int milis = 2000;
 
 String base = _base, waist = _waist, arm1 = _arm1, arm2 = _arm2, hook = _hook;
 
 unsigned long aktMill = millis();
+long predMilldon = aktMill;
 bool ndone = true, loo = false;
 
 //-----------------------------------------------------------------------------------------------
@@ -50,20 +51,25 @@ void setup() {//========================================setup
   // celé spravím iba ak chcem servamy hýbať servami (pre debug)
   if (ARMservo) {
     // inicializácia pinov a zasielanie pinom pozíciu 90°
-    for (int i = 0; i < NUM_SERVOS; i++) {
+    for (int i = 0; i < sernum; i++) {
       // attatchnem predurčený pin k objektu servo
       servo[i].attach(pinsetup[i]);
       delay(20);
       
       // voči sercu maximu↓ odpočítam minimum↓ a videlím dvomi↓
-      int uhol = ( serRozsah[count] - serRozsah[count+1] ) / 2;
+      int iniuh = ( serRozsah[count] - serRozsah[count+1] ) / 2;
       count = count+2;
 
       // uložím aby som vedel kde je servo
-      beta[i] = uhol;
+      beta[i] = iniuh;
+      uhol[i] = iniuh;
+      if (debug){
+        Serial.println(iniuh);
+        Serial.println(i);
+      }
 
       // vpíšem vypočítaný uhol do serva
-      servo[i].write(uhol);
+      servo[i].write(iniuh);
     }
   }
 }
@@ -80,7 +86,7 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
   for (int i = 0; i < sernum; i++) {
     uh[i] = _alfa[i];
     if (debug) {
-      Serial.println(uh[i]);
+      Serial.println(_alfa[i]);
     }
   }
   int oneskorenie = 19;             // pauza medzi intervalmi posielania uhlu do serva
@@ -91,7 +97,6 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
 
   // proste while true loop
   while (true) {
-
     // loopnem cez všetky uhly a vypočítam ich increment
     for (int i = 0; i < sernum ; i++) {
       t += aktMill - predMillt;
@@ -135,7 +140,7 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
     }
 
     // ak čas od začiatku programu je väčší ako zadaný čas
-    if (aktMill > cas) {
+    if (t > cas) {
 
       // idem cez všetky uhly
       for (int i = 0; i < sernum; i++) {
@@ -295,10 +300,13 @@ void loop() {//=============================================loop
 
     // kontrolujem ďaľej uhli
     loo = (((uhol[0] != beta[0]) or (uhol[1] != beta[1]) or ((uhol[3] != beta[3]) or (uhol[2] != beta[2]))));
-  }
-  else{
     Serial.println("1");
-    delay(150);
+  }
+
+  aktMill = millis();
+  if ((aktMill - predMilldon) >= milis) {
+    Serial.println("1");
+    predMilldon = aktMill;
   }
   
 }

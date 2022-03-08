@@ -1,7 +1,7 @@
 #ifndef PARAMETERS_H
 #define PARAMETERS_H
 
-#define debugb false
+#define debugb true
 #define justdbg false
 #define ARMservo true
 
@@ -17,11 +17,11 @@
 #define _hook "100"
 
 // keby bolo treba prekontrolovať matematiku na Arduine samotnom
-#define i_base 42
-#define i_waist 69
-#define i_arm1 143
-#define i_arm2 96
-#define i_hak 75
+#define i_base 52
+#define i_waist 65
+#define i_arm1 150
+#define i_arm2 115
+#define i_hak 100
 
 // piny na servá
 #define sr1 3
@@ -33,20 +33,24 @@
 
 // maximum a minimum pre posledné servo
 // note je to pre kontrolu seriových dát takže "twins" sa sem nepočítajú
-#define ser1max 180
-#define ser1min 1
+#define ser1maxp 180
+#define ser1minp 1
 
-#define ser2max 180
-#define ser2min 1
+#define ser2maxp 180
+#define ser2minp 1
 
-#define ser3max 180
-#define ser3min 1
+#define ser3maxp 180
+#define ser3minp 1
 
-#define ser4max 180
-#define ser4min 1
+#define ser4maxp 180
+#define ser4minp 1
+
+// zápästie
+#define ser5maxp 180
+#define ser5minp 1
 
 // chnapaky
-#define ser5max 180
-#define ser5min 140
+#define ser6maxp 180
+#define ser6minp 140
 
 #endif
