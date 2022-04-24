@@ -14,7 +14,7 @@ spacer = ","
 debug = {
 	'0':            bool(1),  # celkový debug
 	'csv':          bool(1),  # čítanie CSV súboru
-	'math':         bool(1),  # matematika
+	'math':         bool(0),  # matematika
 	'mathEX':       bool(1),  # matematika
 	'ini':          bool(1),  # inicializačný
 	'fromser':      bool(1),  # z sériového portu
@@ -104,15 +104,15 @@ class Axel():
 		self.Y = 250
 		self.Z = 0
 
-		# inicializácia
-		# self.ini()
+	# inicializácia
+	# self.ini()
 
-		# toto mám iba na testovanie Arduina
-		#                      ↓↓ čas na pohyb v milisekundách
-		# -3689,7823,14682,25,500
-		# -3689,7823,14682,25,25,500
+	# toto mám iba na testovanie Arduina
+	#                      ↓↓ čas na pohyb v milisekundách
+	# -3689,7823,14682,25,500
+	# -3689,7823,14682,25,25,500
 
-		# self.mathAX2(self.X, self.Y, self.Z, 143, 96, 7)
+	# self.mathAX2(self.X, self.Y, self.Z, 143, 96, 7)
 
 	def mathAX2(self, Xi, Yi, Zi, arm1, arm2, tool, base, Xbase=0, Ybase=0, Zbase=0):
 		"""matika na výpočet uhlov z súradníc pre 2kĺbového robota + výpočet rotácie základne
@@ -228,18 +228,18 @@ class Axel():
 				if row1['ar'] == '1':
 					posCount1 += 1
 					self.pos1[posCount1] = {
-						'X': row1['X'],
-						'Y': row1['Y'],
-						'Z': row1['Z']
+						'X': float(row1['X']),# * 10,
+						'Y': float(row1['Y']),# * 10,
+						'Z': float(row1['Z'])# * 10
 					}
 					if debug['csv']: print(self.pos1)
 
 				if row1['ar'] == '2':
 					posCount2 += 1
 					self.pos2[posCount2] = {
-						'X': row1['X'],
-						'Y': row1['Y'],
-						'Z': row1['Z']
+						'X': float(row1['X']),# * 10,
+						'Y': float(row1['Y']),# * 10,
+						'Z': float(row1['Z'])# * 10
 					}
 					if debug['csv']: print(self.pos2)
 
@@ -346,7 +346,7 @@ class Axel():
 						CustomError(e)
 						pass
 
-						# keď nenájde žiadne Axelovské Arduina
+				# keď nenájde žiadne Axelovské Arduina
 				if not ((self.Aport or self.Bport) or self.joyPort):
 					print(debug['text'] + '\r' + debug['space'] + "Nenašiel som žiadne porty s Axel doskami")
 					pass
@@ -379,7 +379,7 @@ class arduino():
 				self.serPort.close()
 			self.serPort.open()
 
-			self.serPort.flushInput()
+			self.serPort.flush()
 			self.name = parametre[1]
 			self.sendData = False
 
@@ -425,8 +425,13 @@ class arduino():
 
 			self.sendAxel(self.parametre['uhly'], 2000)
 
-			if debug['ini'] and self.sendData: print(
-				debug['gtext'] + debug['gtext'] + f'inicializácia {parametre[1]} hotová\r\n')
+			if debug['ini'] and not self.sendData:
+				print(
+					debug['gtext'] +
+					debug['gtext'] +
+					f'inicializácia {parametre[1]} hotová\r\n'
+				)
+
 
 		@tiME
 		def sendAxel(self, data, milis=1500):  # TODO dať do subprocess alebo aspoň do asyncu
@@ -464,11 +469,12 @@ class arduino():
 				)
 				data.clear()
 			else:
-				CustomError("neviem kde ale musíš zadať správne arduino na ktoré chceš poslať dáta")
+				CustomError("zasielanie dát: neviem kde ale musíš zadať správne arduino na ktoré chceš poslať dáta")
 			if debug['zasielanie']: print(f'posielanie dat = {serdata}')
 			while not self.sendData:
 				self.serPort.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
 				time.sleep((milis - 200) / 1000)
+				self.serPort.flush()
 				c = self.serPort.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
 				if debug['auto-program']: print(f'pohyb dokončený z {self.name} Arduina?: {c}')
 				if c == '1':
@@ -480,7 +486,7 @@ class arduino():
 				else:
 					print('\x1b[1;33;33m' + 'čakanie na dokončenie pohybu' + '\x1b[0m')
 					print(c + '\n')
-					self.serPort.flushInput()
+					self.serPort.flush()
 
 		def __exit__(self, exc_type=0, exc_val=0, exc_tb=0):
 			if debug['0']: print('\x1b[1;30;41m' + f'zatvaram port {self.name} ' + '\x1b[0m')
@@ -605,7 +611,7 @@ if __name__ == "__main__":
 			print(debug['space'] + f'Bimb arduino je zatvorene: {not object.Bimb.serPort.isOpen()}')
 			print(debug['space'] + f'joy arduino je zatvorene: {not object.Joy.serPort.isOpen()}')
 		raise CustomError(e)
-		# print(f'\nExeption: ({e})')
+	# print(f'\nExeption: ({e})')
 
 	finally:  # "čisté" ukončenie programu
 		if debug['0']:

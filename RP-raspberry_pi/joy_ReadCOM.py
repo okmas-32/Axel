@@ -1,6 +1,6 @@
+
 from subprocess import STDOUT
 from sys import stdout, argv
-import serial
 
 try:
     #inicializuje sériovú komunikáciu

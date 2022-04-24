@@ -95,9 +95,11 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
   int cas = _cas;
   long t = 0;
 
-  Serial.print("betan: "); Serial.println(betan);
-  Serial.print("alfan: "); Serial.println(alfan);
-  Serial.print("betan1: "); Serial.println(_beta[0]);
+  if (debug) {
+    Serial.print("betan: "); Serial.println(betan);
+    Serial.print("alfan: "); Serial.println(alfan);
+    Serial.print("betan1: "); Serial.println(_beta[0]);
+  }
 
   float uh[alfan];
   for (int i = 0; i < alfan; i++) {
