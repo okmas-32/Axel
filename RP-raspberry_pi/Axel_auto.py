@@ -1,8 +1,8 @@
-import sys
-import serial
+from sys import exit
+from serial import Serial, tools
 import serial.tools.list_ports      # python -m serial.tools.list_ports -v
-import time
-import locale
+from time import sleep
+from locale import getpreferredencoding
 from math import sqrt, atan2, degrees, atan
 from csv import DictReader
 
@@ -60,9 +60,9 @@ class Axel():
         self.ar2u4 = 90
         self.ar2u5 = 90
 
-        self.A = serial.Serial()        # ser. pre Angie
-        self.B = serial.Serial()        # ser. pre Bimbisa
-        self.joy = serial.Serial()      # ser. pre joystick ale aj tak sa nepoužíva lebo ho zapína subprocess
+        self.A = Serial()        # ser. pre Angie
+        self.B = Serial()        # ser. pre Bimbisa
+        self.joy = Serial()      # ser. pre joystick ale aj tak sa nepoužíva lebo ho zapína subprocess
 
         #ports in string
         self.Aport = None
@@ -117,15 +117,15 @@ class Axel():
         (funguje aj vo windowse☺)"""
 
         portsini = []
-        for port, _, _ in sorted(serial.tools.list_ports.comports()):
+        for port, _, _ in sorted(tools.list_ports.comports()):
             portsini.append(port)
 
         # hľadá Arduína kým sú neni pripojené všetky
         while not (self.Aport and self.Bport):  # počká sekundu potom skontroluje či sú nové porty ak tak skontroluje či sú to Arduiná s Axelom
 
-            time.sleep(1)
+            sleep(1)
             print("čakám na pripojenie Arduín")
-            ports = list(serial.tools.list_ports.comports())
+            ports = list(tools.list_ports.comports())
 
             # debug stuuf (keď nenájde žiadne porty)
             if not portsini:
@@ -148,14 +148,14 @@ class Axel():
                         print(str(i))
                         print(f'port: {port}')
 
-                    ser = serial.Serial(portEH[i], self.baud_rate, timeout=2)
+                    ser = Serial(portEH[i], self.baud_rate, timeout=2)
 
                     if ser.isOpen():
                         ser.close()
                     ser.open()
 
                     try:
-                        x = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
+                        x = ser.readline().decode(getpreferredencoding().rstrip()).rstrip()
 
                         Ax = x.split(',')
 
@@ -251,8 +251,8 @@ class Axel():
                 CustomError("neviem kde ale musíš zadať správne arduino na ktoré chceš poslať dáta")
 
             if debug['0']: print(serdata)
-            ser.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
-            c = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
+            ser.write((serdata + '\r\n').encode(getpreferredencoding().rstrip()))
+            c = ser.readline().decode(getpreferredencoding().rstrip()).rstrip()
             if debug['0']: print(c)
         if c == '1':
             self.sendData = bool(1)
@@ -377,8 +377,8 @@ class Axel():
         """funkcia na uzatvaranie seriovích komunikácii... ano viem mohol som použiť build in funkcie
         __enter__ a __exit__ ale bolo málo času"""
         serdata = 'reset'
-        ar.A.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
-        ar.B.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
+        ar.A.write((serdata + '\r\n').encode(getpreferredencoding().rstrip()))
+        ar.B.write((serdata + '\r\n').encode(getpreferredencoding().rstrip()))
 
         self.A.close()
         self.B.close()
@@ -411,7 +411,7 @@ if __name__ == "__main__":
             print(debug['space'] + f'A arduino: {ar.A}')
             print(debug['space'] + f'b arduino: {ar.B}')
             print(debug['space'] + f'joy arduino: {ar.joy}')
-        sys.exit(1)
+        exit(1)
 
     except Exception as e:
         ar.cloSER()
@@ -432,4 +432,4 @@ if __name__ == "__main__":
             print(debug['space'] + str(ar.joy))
             print(debug['space'] + str(ar.joyPort))
             print(debug['space'] + str(ar.joyParametre))
-        sys.exit(0)  # "čisté" ukončenie programu
+        exit(0)  # "čisté" ukončenie programu

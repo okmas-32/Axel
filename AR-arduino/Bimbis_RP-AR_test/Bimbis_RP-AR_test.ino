@@ -15,14 +15,15 @@ const int sernum = NUM_SERVOS;
 
 const byte pinsetup[] = {sr1, sr2, sr3, sr4, sr5, sr6};
 int ser1max = ser1maxp, ser1min = ser1minp,
-ser2max = ser2maxp, ser2min = ser2minp,
-ser3max = ser3maxp, ser3min = ser3minp,
-ser4max = ser4maxp, ser4min = ser4minp,
-ser5max = ser5maxp, ser5min = ser5minp,
-ser6max = ser6maxp, ser6min = ser6minp;
+    ser2max = ser2maxp, ser2min = ser2minp,
+    ser3max = ser3maxp, ser3min = ser3minp,
+    ser4max = ser4maxp, ser4min = ser4minp,
+    ser5max = ser5maxp, ser5min = ser5minp,
+    ser6max = ser6maxp, ser6min = ser6minp;
 const int serRozsah[] = {ser1max, ser1min, ser2max, ser2min, ser3max, ser3min, ser4max, ser4min, ser5max, ser5min, ser6max, ser6min};
 String spa = space;
 String input = "";
+
 bool debug = debugb;
 /*
    ak kód nefunguje keď je zapojený do počítaču kde beží Axel Python program
@@ -39,6 +40,10 @@ String base = _base, waist = _waist, arm1 = _arm1, arm2 = _arm2, hook = _hook;
 unsigned long aktMill = millis();
 bool ndone = true, loo = false;
 
+int counter = 0;
+int lastIndex = 0;
+long predMilldon = aktMill;
+
 //-----------------------------------------------------------------------------------------------
 void setup() {//========================================setup
   pinMode(LED_BUILTIN, OUTPUT);
@@ -49,14 +54,14 @@ void setup() {//========================================setup
 
   // MÁŠ O JEDNO SERVO NAVIAC
   int count = 0;
-  int u[] = {0,0,0,0,0,0};
+  int u[] = {0, 0, 0, 0, 0, 0};
   if (ARMservo) {
     for (int i = 0; i < sernum; i++) {
       servo[i].attach(pinsetup[i]);
       delay(20);
-      u[i] = (serRozsah[count]-serRozsah[count+1]) / 2 ;
-      count = count+2;
-      if (debug){
+      u[i] = (serRozsah[count] - serRozsah[count + 1]) / 2 ;
+      count = count + 2;
+      if (debug) {
         Serial.println(count);
         Serial.println(u[i]);
         Serial.println(pinsetup[i]);
@@ -68,7 +73,7 @@ void setup() {//========================================setup
     uhol[2] = u[3];
     uhol[3] = u[4];
     uhol[4] = u[5];
-    
+
     beta[0] = u[0];
     beta[1] = u[1];
     beta[2] = u[3];
@@ -90,9 +95,9 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
   int cas = _cas;
   long t = 0;
 
-  Serial.print("betan: ");Serial.println(betan);
-  Serial.print("alfan: ");Serial.println(alfan);
-  Serial.print("betan1: ");Serial.println(_beta[0]);
+  Serial.print("betan: "); Serial.println(betan);
+  Serial.print("alfan: "); Serial.println(alfan);
+  Serial.print("betan1: "); Serial.println(_beta[0]);
 
   float uh[alfan];
   for (int i = 0; i < alfan; i++) {
@@ -161,7 +166,7 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
       }
       predMill = aktMill;
     }
-    
+
     if (t > cas) {
       for (int i = 0; i < sernum ; i++) {
         beta[i] = uh[i];
@@ -177,9 +182,6 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
 }
 
 
-int counter = 0;
-int lastIndex = 0;
-long predMilldon = aktMill;
 
 void loop() {//========================================loop
   while (Serial.available() > 0) {
@@ -193,8 +195,8 @@ void loop() {//========================================loop
         Serial.println(input);
       }
       if (input == "reset") {
-        for (int i = 0; i < 5; i++) {
-          uhol[i] = 90;
+        for (int z = 0; z < 5; z++) {
+          uhol[z] = 90;
           milis = 2000;
         }
         input = "";
@@ -208,16 +210,23 @@ void loop() {//========================================loop
         }
       }
       else {
+        counter = 0;
+        lastIndex = 0;
+        rec = "";
+        ndone = true;
         for (int i = 0; i < input.length(); i++) {
           if (input.substring(i, i + 1) == ",") {
-            Serial.print(counter);
 
             uhol[counter] = input.substring(lastIndex, i).toFloat() / 100;
 
-            if (counter == 0) {
-              uhol[counter] = uhol[counter] + 90;
+            if (counter == 4) { // úprava percent do rozsahu lebo servo nemá celý rozsah volný
+              uhol[counter] = (uhol[counter] * (ser5max - ser5min));
             }
-            
+
+            if (counter == 3) {
+              uhol[counter] = uhol[counter] * 180;
+            }
+
             if (counter == 2) {
               uhol[counter] = (180 - uhol[counter]);
               if (uhol[counter] < 90) {
@@ -225,22 +234,19 @@ void loop() {//========================================loop
               }
             }
 
-            if (counter == 3) {
-              uhol[counter] = uhol[counter] * 180;
-            }
-            if (counter == 4) { // úprava percent do rozsahu lebo servo nemá celý rozsah volný
-              uhol[counter] = (uhol[counter] * (ser5max - ser5min));
+            if (counter == 0) {
+              uhol[counter] = uhol[counter] + 90;
             }
 
             lastIndex = i + 1;
 
             if (debug) {
               Serial.print(debugs + " ");
-              Serial.println(uhol[counter] + spa);
+              Serial.println(uhol[counter]);
             }
 
             /*
-            if (counter > sernum + 1) {
+              if (counter > sernum + 1) {
               for (int i = 0; i < sernum; i++) {
                 if (uhol[i] <= serRozsah[i]) {
                   uhol[i] = serRozsah[i];
@@ -255,7 +261,7 @@ void loop() {//========================================loop
                 }
               }
               i = input.length();
-            }
+              }
             */
 
             counter++;

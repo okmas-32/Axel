@@ -129,6 +129,7 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
           Serial.print(debugs);
           Serial.print("UH: ");
           Serial.println(uh[i]);
+          
         }
       }
 
@@ -181,12 +182,13 @@ void loop() {//=============================================loop
       if (debug) {
         Serial.println("------------------");
         Serial.print(debugs);
-        Serial.println("inpud: ");
+        Serial.print("inpud: ");
+        Serial.println(input);
       }
 
       if (input == "reset") {
-        for (int i = 0; i < sernum; i++) {
-          uhol[i] = 90;
+        for (int z = 0; z < sernum; z++) {
+          uhol[z] = 90;
           milis = 2000;
         }
         input = "";
@@ -195,6 +197,7 @@ void loop() {//=============================================loop
         rec = "";
         ndone = true;
         if (debug) {
+          Serial.print("reset");
           Serial.print('\n');
         }
       }
@@ -233,6 +236,7 @@ void loop() {//=============================================loop
               Serial.println(uhol[counter] + spa);
             }
 
+            /* pre zatiaľ nepoužívam
             // protekcia keby sa pošle nejakým spôsom viacej dát než arduino potrebuje
             // a kontrola uhlov vzhľadom na min/max uhlov ruky
             if (counter > sernum + 1) {
@@ -251,13 +255,14 @@ void loop() {//=============================================loop
               }
               i = input.length();
             }
+            */
 
             // pridám 1 aby som uložil do ďaľšieho poľa v uhloch
             counter++;
           }
 
           // posledná hodnota (milisekundy) nemajú za sebou "," tak tie musím zapísať od posledného zápisu po koniec dátového blocku
-          else if (input.length() == i + 1) {
+          if (input.length() == i + 1) {
             milis = input.substring(lastIndex, i + 1).toInt();
 
             // debuUug
