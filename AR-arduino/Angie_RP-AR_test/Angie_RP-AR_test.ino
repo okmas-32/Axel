@@ -55,15 +55,15 @@ void setup() {//========================================setup
       // attatchnem predurčený pin k objektu servo
       servo[i].attach(pinsetup[i]);
       delay(20);
-      
+
       // voči sercu maximu↓ odpočítam minimum↓ a videlím dvomi↓
-      int iniuh = ( serRozsah[count] - serRozsah[count+1] ) / 2;
-      count = count+2;
+      int iniuh = ( serRozsah[count] - serRozsah[count + 1] ) / 2;
+      count = count + 2;
 
       // uložím aby som vedel kde je servo
       beta[i] = iniuh;
       uhol[i] = iniuh;
-      if (debug){
+      if (debug) {
         Serial.println(iniuh);
         Serial.println(i);
       }
@@ -120,7 +120,7 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
         if (ARMservo) {
           servo[i].write(uh[i]);
         }
-        
+
         // debuuuug
         if (debug) {
           Serial.print(debugs);
@@ -129,7 +129,7 @@ bool movMe(Servo *ser , float *_beta, int betan , int _cas, float *_alfa, int al
           Serial.print(debugs);
           Serial.print("UH: ");
           Serial.println(uh[i]);
-          
+
         }
       }
 
@@ -203,6 +203,7 @@ void loop() {//=============================================loop
       }
       else {
 
+        //==================================================spracovávanie dát
         // prejdem cez všetky charakteri v stringu input
         for (int i = 0; i < input.length(); i++) {
 
@@ -212,17 +213,22 @@ void loop() {//=============================================loop
             // uložím uhol od posledného indexu po teraz nájdené "," - 1 a celé to vydelím 100 (proste tak to posielam z pythonu)
             uhol[counter] = input.substring(lastIndex, i).toFloat() / 100;
 
-            // pre posledný uhol ktorý je poslaný z pythonu v %
+            // pre posledný uhol ktorý je poslaný z Pythonu v %
             if (counter == 3) {
               uhol[counter] = uhol[counter] * 180;
             }
 
-            // kvôli 3 mu servu lebo je fyzicky opačne
+            // 3 servo je opačne
             if (counter == 2) {
               uhol[counter] = (180 - uhol[counter]);
             }
 
-            // pracovné prostredie má servo 0-180 nie 0+-90
+            // nepotrebuje +45(°) lebo je to poskladané s myšlienkou na odchyľku
+            if (counter == 1) {// toto servo má približne odchyľku +-5° takže myslím si že to veľmi nezáleží
+              uhol[counter] = uhol[counter] + 10;
+            }
+
+            // pracovné prostredie má servo 0-180 nie 0+-90 (reálne pre to robím ten prepočet)
             if (counter == 0) {
               uhol[counter] = uhol[counter] + 90;
             }
@@ -237,9 +243,9 @@ void loop() {//=============================================loop
             }
 
             /* pre zatiaľ nepoužívam
-            // protekcia keby sa pošle nejakým spôsom viacej dát než arduino potrebuje
-            // a kontrola uhlov vzhľadom na min/max uhlov ruky
-            if (counter > sernum + 1) {
+              // protekcia keby sa pošle nejakým spôsom viacej dát než arduino potrebuje
+              // a kontrola uhlov vzhľadom na min/max uhlov ruky
+              if (counter > sernum + 1) {
               for (int i = 0; i < sernum; i++) {
                 if (uhol[i] <= serRozsah[i]) {
                   uhol[i] = serRozsah[i];
@@ -254,7 +260,7 @@ void loop() {//=============================================loop
                 }
               }
               i = input.length();
-            }
+              }
             */
 
             // pridám 1 aby som uložil do ďaľšieho poľa v uhloch
@@ -313,5 +319,5 @@ void loop() {//=============================================loop
     Serial.println("1");
     predMilldon = aktMill;
   }
-  
+
 }

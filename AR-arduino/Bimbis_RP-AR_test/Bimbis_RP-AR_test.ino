@@ -52,7 +52,7 @@ void setup() {//========================================setup
   Serial.print(base + spa + waist + spa + arm1 + spa + arm2 + spa + hook);
   Serial.print('\n');
 
-  // MÁŠ O JEDNO SERVO NAVIAC
+  // MÁM O JEDNO SERVO NAVIAC
   int count = 0;
   int u[] = {0, 0, 0, 0, 0, 0};
   if (ARMservo) {
@@ -68,6 +68,8 @@ void setup() {//========================================setup
       }
       servo[i].write(u[i]);
     }
+
+    // radsej sa nepýtajte
     uhol[0] = u[0];
     uhol[1] = u[1];
     uhol[2] = u[3];
@@ -80,7 +82,6 @@ void setup() {//========================================setup
     beta[3] = u[4];
     beta[4] = u[5];
   }
-  // radsej sa nepýtajte
   if (debug) {
     Serial.print('\n'); Serial.print("pocet serv s ktorym sa pocita: ");
     Serial.println(sernum);
@@ -216,6 +217,8 @@ void loop() {//========================================loop
         lastIndex = 0;
         rec = "";
         ndone = true;
+
+        //==================================================spracovávanie dát
         for (int i = 0; i < input.length(); i++) {
           if (input.substring(i, i + 1) == ",") {
 
@@ -229,10 +232,11 @@ void loop() {//========================================loop
               uhol[counter] = uhol[counter] * 180;
             }
 
+            //(*1) hviezdne servo je kladné k pracovisku
             if (counter == 2) {
-              uhol[counter] = (180 - uhol[counter]);
-              if (uhol[counter] < 90) {
-                uhol[counter] = 90;
+              uhol[counter] = uhol[counter]-90;
+              if (uhol[counter] < 0) {// limit serva.. nemôže ísť nižšie
+                uhol[counter] = 0;
               }
             }
 
@@ -308,3 +312,6 @@ void loop() {//========================================loop
   }
 
 }
+
+
+//(*1) hviezdne servo sa volá to servo preto lebo sa pozerá hore na hviezdy a keby to tak neni tak ja som už mohol dávno SPAŤ

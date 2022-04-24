@@ -14,8 +14,8 @@ spacer = ","
 debug = {
 	'0':            bool(1),  # celkový debug
 	'csv':          bool(1),  # čítanie CSV súboru
-	'math':         bool(0),  # matematika
-	'mathEX':       bool(1),  # matematika
+	'math':         bool(1),  # matematika
+	'mathEX':       bool(0),  # matematika
 	'ini':          bool(1),  # inicializačný
 	'fromser':      bool(1),  # z sériového portu
 	'auto-program': bool(1),  # proste automatický mód
@@ -131,14 +131,13 @@ class Axel():
 			print(f'\tarm2 = {arm2}')
 			print(f'\ttool = {tool}')
 
-		elif Xi < 80:
+		if Xi < 80:
 			Xi = 80
-		elif Yi < 80:
+		if Yi < 80:
 			Yi = 1
-		elif Zi < 1 - base:
+		if Zi < 1 - base:
 			Zi = 80
-		else:
-			pass
+
 		X = int(Xi)
 		Y = int(Yi) - (base)
 		Z = int(Zi)
@@ -320,14 +319,14 @@ class Axel():
 							if debug['0'] and debug['ini']: print(debug['gtext'] + f'{p} port pre {Ax[1]} Arduino')
 
 							ser.close()
-							start = [300, 100, 0]
+							start = [300, 150, 0]
 							self.Angi = arduino.ruka(Ax, start, ser)
 							self.Aport = True
 						elif Ax[1] == 'Bimbis:)':  # ak je Bimbis tak spravím to isté ako pri Angie (lebo oboje sú ruky)
 							if debug['0'] and debug['ini']: print(debug['gtext'] + f'{p} port pre {Ax[1]} Arduino')
 
 							ser.close()
-							start = [300, 250, 0]
+							start = [250, 250, 0]
 							self.Bimb = arduino.ruka(Ax, start, ser)
 							self.Bport = True
 						elif Ax[1] == 'joy':
@@ -374,11 +373,9 @@ class arduino():
 		def __init__(self, parametre, zaklad, serPort=serial.Serial()):
 			self.serPort = serPort
 			self.serPort.open()
-
 			if self.serPort.isOpen():
 				self.serPort.close()
 			self.serPort.open()
-
 			self.serPort.flush()
 			self.name = parametre[1]
 			self.sendData = False
@@ -437,34 +434,57 @@ class arduino():
 		def sendAxel(self, data, milis=1500):  # TODO dať do subprocess alebo aspoň do asyncu
 			"""táto funkcia slúži na zasielanie uhlov a času za ktorý sa majú servá pohnúť do Axel Arduina"""
 			# note používam prvú verziu AR-RAP
+
+			self.sendData = False
+
 			if debug['zasielanie']: print(f'\rdata v send Data = {data}')
 			# zaokruhlenie(pre posledné servo čiže chnapačky) / zjednodušenie(aby som nemusel posielať desatinné čísla)
 			# pri posielaní do sériového portu
 			rou = 100
 			serdata = "heh... you done it"
 			if self.name == 'Angie':
-				# zostaviť sériové dáta
 				serdata = (
-						(str(round(int((data[0])), 2) * rou) if (int(data[0]) != 0) else str(0)) + spacer +
-						(str(round(int((data[1])), 2) * rou) if (int(data[1]) != 0) else str(0)) + spacer +
-						(str(round(int((data[2])), 2) * rou) if (int(data[2]) != 0) else str(0)) + spacer +
-						(str(round(int((data[3])), 2) / 180 * 100) if (int(data[3]) != 0) else str(0)) + spacer +
+						str(round(int(data[0]), 2) * rou
+						    if (int(data[0]) != 0)
+						    else str(0))
+						+ spacer +
+						str(round(int(data[1]), 2) * rou
+						    if (int(data[1]) != 0)
+						    else str(0))
+						+ spacer +
+						str(round(int(data[2]), 2) * rou
+						    if (int(data[2]) != 0)
+						    else str(0))
+						+ spacer +
+						str(round(int(data[3]) / 180 * 100, 2)
+						    if (int(data[3]) != 0)
+						    else str(0))
+						+ spacer +
 						str(milis)
 				)
 				data.clear()
 			elif self.name == 'Bimbis:)':
 				serdata = (
-					# prvý uhol
-						str((round(int((data[0])), 2) * rou) if (int(data[0]) != 0) else str(0)) + spacer +
-						# druhý uhol (ktorý sa preopčítavá na dve servá v Arduine)
-						str((round(int((data[1])), 2) * rou) if (int(data[1]) != 0) else str(0)) + spacer +
-						# tretí uhol ktorý má limiter na arduine na min 90°
-						str((round(int((data[2])), 2) * rou) if (int(data[2]) != 0) else str(0)) + spacer +
-						# zápästie
-						str((round(int((data[3])), 2) / 180 * 100) if (int(data[3]) != 0) else str(0)) + spacer +
-						# toola ktorá má tiež v Arduine svoje minimum a Maximum
-						str((round(int((data[4])), 2) / 180 * 100) if (int(data[4]) != 0) else str(0)) + spacer +
-						# milis na rozhranie pohybu
+						str((round(int(data[0]), 2) * rou)
+						    if (int(data[0]) != 0)
+						    else str(0))
+						+ spacer +
+						str((round(int(data[1]), 2) * rou)
+						    if (int(data[1]) != 0)
+						    else str(0))
+						+ spacer +
+						str((round(int(data[2]), 2) * rou)
+						    if (int(data[2]) != 0)
+						    else str(0))
+						+ spacer +
+						str(round(int(data[3]) / 180 * 100, 2)
+						    if (int(data[3]) != 0)
+						    else str(0))
+						+ spacer +
+						str(round(int(data[4]) / 180 * 100, 2)
+						    if (int(data[4]) != 0)
+						    else str(0))
+						+ spacer +
 						str(milis)
 				)
 				data.clear()
@@ -540,6 +560,58 @@ class arduino():
 			)
 
 
+def manual():
+	try:
+		while True:
+			X = int(input('zadaj X: '))
+			Y = int(input('zadaj Y: '))
+			Z = int(input('zadaj Z: '))
+			print('\nzadaj číslo\n'
+			      '0 = Angie\n'
+			      '1 = Bimbis')
+			choose = input('vyber robota: ')
+			uhol = [0]*3
+			if choose == '0':
+				print('pohyb Angi')
+				uhol[0], \
+				uhol[1], \
+				uhol[2] = \
+					object.mathAX2(X,
+					               Y,
+					               Z,
+					               object.Angi.parametre['info']['arm1'],
+					               object.Angi.parametre['info']['arm2'],
+					               object.Angi.parametre['info']['tool'],
+					               object.Angi.parametre['info']['base'] +
+					               object.Angi.parametre['info']['waist']
+					               )
+				uhol.append(0)
+
+				object.Angi.sendAxel(uhol, 2000)
+
+			if choose == '1':
+				print('pohyb Bimbis')
+				uhol[0], \
+				uhol[1], \
+				uhol[2] = \
+					object.mathAX2(X,
+					               Y,
+					               Z,
+					               object.Bimb.parametre['info']['arm1'],
+					               object.Bimb.parametre['info']['arm2'],
+					               object.Bimb.parametre['info']['tool'],
+					               object.Bimb.parametre['info']['base'] +
+					               object.Bimb.parametre['info']['waist']
+					               )
+				uhol.append(0)
+				uhol.append(0)
+
+				object.Bimb.sendAxel(uhol, 2000)
+
+	except KeyboardInterrupt:
+		print("\nzadaný Ctrl+C interupt")
+		pass
+
 # toto pôjde jedine ak to je spustené ako main program
 if __name__ == "__main__":
 
@@ -564,65 +636,47 @@ if __name__ == "__main__":
 	# inicializácia Axel prostredia
 	object.ini()
 
-	object.autoMove(1)
+	#object.autoMove(1)
 
-	try:
-		# #TODO spraviť na checkovanie či je raspberry ready (minimálne jedna RUKA)
-		# #===============finnaly the while True loop
-		# while True:
-		#     time.sleep(0.01)
-		#     x = object.readJOYdata()
-		#     print(x)
-		#     print(object.u1)
-		#     print(object.u2)
-		#     print(object.u3)
-		#     print(object.u4)
-		#     if (not object.sendData) and object.predInp[0]:
-		#         object.sendAxel(object.A)
-		#
-		#     if (not object.sendData) and not object.predInp[0]:
-		#         object.sendAxel(object.B)
+	manual()
 
-		print(object.Angi.name)
-		print(object.Bimb.name)
-		print(object.Joy.name)
-		print('\r\n')
-		print(object.Angi)
-		time.sleep(10)
 
-	except KeyboardInterrupt:  # očakáva Ctrl + C prerušenie programu
-		if debug['0'] and debug['ini']:
-			print('\r' + debug['text'])
-			object.Angi.__exit__()
-			object.Bimb.__exit__()
-			object.Joy.__exit__()
-			print(debug['space'] + f'Angie arduino je zatvorene: {not object.Angi.serPort.isOpen()}')
-			print(debug['space'] + f'Bimb arduino je zatvorene: {not object.Bimb.serPort.isOpen()}')
-			print(debug['space'] + f'joy arduino je zatvorene: {not object.Joy.serPort.isOpen()}')
-
-		print(f'\nAxel bol zastavený s commandom Ctrl + C\n')
-
-		sys.exit(1)
-
-	except Exception as e:
-		if debug['0'] and debug['ini']:
-			print('\r' + debug['text'])
-			print(debug['space'] + f'Angie arduino je zatvorene: {not object.Angi.serPort.isOpen()}')
-			print(debug['space'] + f'Bimb arduino je zatvorene: {not object.Bimb.serPort.isOpen()}')
-			print(debug['space'] + f'joy arduino je zatvorene: {not object.Joy.serPort.isOpen()}')
-		raise CustomError(e)
-	# print(f'\nExeption: ({e})')
-
-	finally:  # "čisté" ukončenie programu
-		if debug['0']:
-			print('\r')
-			print(debug['text'])
-			print(debug['space'] + str(object.Angi.name))
-			print(debug['space'] + str(object.Angi) + '\n')
-
-			print(debug['space'] + str(object.Bimb.name))
-			print(debug['space'] + str(object.Bimb) + '\n')
-
-			print(debug['space'] + str(object.Joy.name))
-			print(debug['space'] + str(object.Joy) + '\n')
-		sys.exit(0)  # "čisté" ukončenie programu
+	# try:
+	# 	pass
+	#
+	# except KeyboardInterrupt:  # očakáva Ctrl + C prerušenie programu
+	# 	if debug['0'] and debug['ini']:
+	# 		print('\r' + debug['text'])
+	# 		object.Angi.__exit__()
+	# 		object.Bimb.__exit__()
+	# 		object.Joy.__exit__()
+	# 		print(debug['space'] + f'Angie arduino je zatvorene: {not object.Angi.serPort.isOpen()}')
+	# 		print(debug['space'] + f'Bimb arduino je zatvorene: {not object.Bimb.serPort.isOpen()}')
+	# 		print(debug['space'] + f'joy arduino je zatvorene: {not object.Joy.serPort.isOpen()}')
+	#
+	# 	print(f'\nAxel bol zastavený s commandom Ctrl + C\n')
+	#
+	# 	sys.exit(1)
+	#
+	# except Exception as e:
+	# 	if debug['0'] and debug['ini']:
+	# 		print('\r' + debug['text'])
+	# 		print(debug['space'] + f'Angie arduino je zatvorene: {not object.Angi.serPort.isOpen()}')
+	# 		print(debug['space'] + f'Bimb arduino je zatvorene: {not object.Bimb.serPort.isOpen()}')
+	# 		print(debug['space'] + f'joy arduino je zatvorene: {not object.Joy.serPort.isOpen()}')
+	# 	raise CustomError(e)
+	# # print(f'\nExeption: ({e})')
+	#
+	# finally:  # "čisté" ukončenie programu
+	# 	if debug['0']:
+	# 		print('\r')
+	# 		print(debug['text'])
+	# 		print(debug['space'] + str(object.Angi.name))
+	# 		print(debug['space'] + str(object.Angi) + '\n')
+	#
+	# 		print(debug['space'] + str(object.Bimb.name))
+	# 		print(debug['space'] + str(object.Bimb) + '\n')
+	#
+	# 		print(debug['space'] + str(object.Joy.name))
+	# 		print(debug['space'] + str(object.Joy) + '\n')
+	# 	sys.exit(0)  # "čisté" ukončenie programu
