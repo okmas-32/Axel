@@ -1,11 +1,11 @@
 import subprocess
 import sys
 import serial
-import serial.tools.list_ports  # python -m serial.tools.list_ports -v
 import time
 import locale
 from math import sqrt, atan2, degrees
 from csv import DictReader
+# python -m serial.tools.list_ports -v
 
 baud_rate = 115200
 spacer = ","
@@ -40,7 +40,7 @@ class CustomError(Exception):
 
 	# teda ak je to error ktorý som schopný obýsť.. ak to je niečo fatálnejšie tak to crashne celé
 	def __init__(self, exception, i=None):
-		if i != None:
+		if i is not None:
 			# ak to je očakávaný error (bez veľkého červeného E na začiatku)
 			print('\r' + debug['space'] + str(exception))
 		else:
@@ -69,8 +69,8 @@ def wrapp(func):
 	return MYwrapp
 
 
-class Axel():
-	def __init__(self, poss):
+class Axel:
+	def __init__(self, poss, ports):
 		"""tu si iba určím aké parametre bude držať objekt v
         classe Axel ako napr. port v ktorom je Arduino alebo dĺžku ramena ruky"""
 
@@ -139,7 +139,7 @@ class Axel():
 			Zi = 80
 
 		X = int(Xi)
-		Y = int(Yi) - (base)
+		Y = int(Yi) - base
 		Z = int(Zi)
 		# vypočítam si dĺžky na výpočet matematiky
 		dlzka1 = arm1
@@ -295,7 +295,7 @@ class Axel():
 		# hľadá Arduína kým sú neni iniciované všetky
 		while not ((self.Aport and self.Bport) and self.joyPort):
 			# aktualizácia ports listu
-			for port, _, _ in sorted(serial.tools.list_ports.comports()):
+			for port in serial.tools.list_ports_windows.comports():
 				ports.append(port)
 			if debug['ini']: print('\033[34m' + f'porty v ini = {ports}' + '\033[0m')
 			# debug stuuf (keď nenájde žiadne porty čo je divné)
@@ -563,13 +563,13 @@ class arduino():
 def manual():
 	try:
 		while True:
-			X = int(input('zadaj X: '))
-			Y = int(input('zadaj Y: '))
-			Z = int(input('zadaj Z: '))
 			print('\nzadaj číslo\n'
 			      '0 = Angie\n'
 			      '1 = Bimbis')
 			choose = input('vyber robota: ')
+			X = int(input('zadaj X: '))
+			Y = int(input('zadaj Y: '))
+			Z = int(input('zadaj Z: '))
 			uhol = [0]*3
 			if choose == '0':
 				print('pohyb Angi')
@@ -608,6 +608,9 @@ def manual():
 
 				object.Bimb.sendAxel(uhol, 2000)
 
+
+
+
 	except KeyboardInterrupt:
 		print("\nzadaný Ctrl+C interupt")
 		pass
@@ -621,12 +624,13 @@ if __name__ == "__main__":
 	try:  # note v Raspberry sa musí vymeniť "\" za "/"... nepítaj sa prečo iba to sprav
 		if sys.platform == 'win32':
 			zlom = '\\'
+			import serial.tools.list_ports_windows
 		elif sys.platform.startswith('linux'):
 			zlom = '/'
+			import serial.tools.list_ports_linux
 		else:
 			raise OSErr
-
-	except OSErr:
+	except:
 		print(debug['Error'] + 'tento program nepodporuje iné systémi ako Windows a Linux' + debug['Error'])
 		print(zlom)
 		sys.exit(1)
@@ -636,47 +640,5 @@ if __name__ == "__main__":
 	# inicializácia Axel prostredia
 	object.ini()
 
-	#object.autoMove(1)
-
+	#manuálne ovládanie
 	manual()
-
-
-	# try:
-	# 	pass
-	#
-	# except KeyboardInterrupt:  # očakáva Ctrl + C prerušenie programu
-	# 	if debug['0'] and debug['ini']:
-	# 		print('\r' + debug['text'])
-	# 		object.Angi.__exit__()
-	# 		object.Bimb.__exit__()
-	# 		object.Joy.__exit__()
-	# 		print(debug['space'] + f'Angie arduino je zatvorene: {not object.Angi.serPort.isOpen()}')
-	# 		print(debug['space'] + f'Bimb arduino je zatvorene: {not object.Bimb.serPort.isOpen()}')
-	# 		print(debug['space'] + f'joy arduino je zatvorene: {not object.Joy.serPort.isOpen()}')
-	#
-	# 	print(f'\nAxel bol zastavený s commandom Ctrl + C\n')
-	#
-	# 	sys.exit(1)
-	#
-	# except Exception as e:
-	# 	if debug['0'] and debug['ini']:
-	# 		print('\r' + debug['text'])
-	# 		print(debug['space'] + f'Angie arduino je zatvorene: {not object.Angi.serPort.isOpen()}')
-	# 		print(debug['space'] + f'Bimb arduino je zatvorene: {not object.Bimb.serPort.isOpen()}')
-	# 		print(debug['space'] + f'joy arduino je zatvorene: {not object.Joy.serPort.isOpen()}')
-	# 	raise CustomError(e)
-	# # print(f'\nExeption: ({e})')
-	#
-	# finally:  # "čisté" ukončenie programu
-	# 	if debug['0']:
-	# 		print('\r')
-	# 		print(debug['text'])
-	# 		print(debug['space'] + str(object.Angi.name))
-	# 		print(debug['space'] + str(object.Angi) + '\n')
-	#
-	# 		print(debug['space'] + str(object.Bimb.name))
-	# 		print(debug['space'] + str(object.Bimb) + '\n')
-	#
-	# 		print(debug['space'] + str(object.Joy.name))
-	# 		print(debug['space'] + str(object.Joy) + '\n')
-	# 	sys.exit(0)  # "čisté" ukončenie programu

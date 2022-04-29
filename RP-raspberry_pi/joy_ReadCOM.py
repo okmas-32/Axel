@@ -1,16 +1,18 @@
-
 from subprocess import STDOUT
 from sys import stdout, argv
 
+import serial
+
 try:
     #inicializuje sériovú komunikáciu
-    ser = serial.Serial(port=argv[1], baudrate=int(argv[2]), timeout=2)
+    serials = serial.Serial
+    ser = serials(port=argv[1], baudrate=int(argv[2]), timeout=2)
     ser.flushInput()
     #prečítam čo mi napísal z jeho setup()
     ser.readline()
     ser.flushInput()
     #napíšem mu 1 aby začal s posielaním dát o joisticku
-    b = b'A\r\n'
+    b = b'\n'
     ser.write(b)
     #čítam dáta ktoré posiela
     while True:  # The program never ends... will be killed when master is over.
