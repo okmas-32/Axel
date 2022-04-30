@@ -1,0 +1,11 @@
+arduino je použité ako ovládač hardwaru... to jesť samotné servá na ruke
+
+v programe som nikde nepoužil delay() dôvod:	
+	-zastavý to celé arduino na dobu ktorý mu dám
+	-radšej som si spravil vlastnú 
+	-radšej som si spravil vlastnú funkciu ckaj()
+						
+
+musel som použiť baudrate 115200 inak by to nestíhalo taký veľký nával dát naraz (posielam cca 40ch raz a potom čakám)
+
+!!!Arduino nano používa ATmega328P (old bootloader)

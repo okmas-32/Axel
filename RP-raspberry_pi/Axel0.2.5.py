@@ -1,10 +1,10 @@
 import subprocess
-import sys
+from sys import platform, exit
 import serial
 import time
 import locale
+import utils
 from math import sqrt, atan2, degrees
-from csv import DictReader
 # python -m serial.tools.list_ports -v
 
 baud_rate = 115200
@@ -70,7 +70,7 @@ def wrapp(func):
 
 
 class Axel:
-	def __init__(self, poss, ports):
+	def __init__(self, poss):
 		"""tu si iba určím aké parametre bude držať objekt v
         classe Axel ako napr. port v ktorom je Arduino alebo dĺžku ramena ruky"""
 
@@ -89,16 +89,15 @@ class Axel:
 		self.pos1 = {}
 		self.pos2 = {}
 
-		if __name__ == "__main__":  # prečíta automaticky csv len ak je spustený ako hlavný program
-			self.CSVr(poss)
+		utils.CSVr(poss, debug)
 
-			if debug['csv']:
-				print(debug['gtext'] + debug['text'] + f' CSV-saved↓ \r')
-				print(f'\t{self.pos1}')
-				print(f'\t{self.pos2}')
-				print(f'počet príkazov z CSV pre 1: {len(self.pos1)}')
-				print(f'počet príkazov z CSV pre 2: {len(self.pos2)}')
-				print('\r')
+		if debug['csv']:
+			print(debug['gtext'] + debug['text'] + f' CSV-saved↓ \r')
+			print(f'\t{self.pos1}')
+			print(f'\t{self.pos2}')
+			print(f'počet príkazov z CSV pre 1: {len(self.pos1)}')
+			print(f'počet príkazov z CSV pre 2: {len(self.pos2)}')
+			print('\r')
 
 		self.X = 300
 		self.Y = 250
@@ -212,43 +211,6 @@ class Axel:
 		)
 		return alfa, beta, gama
 
-	def CSVr(self, csvfile):
-		"""Na čítanie z .csv filov"""
-
-		with open(csvfile, 'r') as csvf:
-			csv_diktionary = DictReader(csvf)
-
-			if debug['csv']: print(debug['gtext'] + debug['text'] + f' CSV↓ \r')
-
-			posCount1 = 0
-			posCount2 = 0
-			for row1 in csv_diktionary:
-				if debug['csv']: print(row1)
-				if row1['ar'] == '1':
-					posCount1 += 1
-					self.pos1[posCount1] = {
-						'X': float(row1['X']),# * 10,
-						'Y': float(row1['Y']),# * 10,
-						'Z': float(row1['Z'])# * 10
-					}
-					if debug['csv']: print(self.pos1)
-
-				if row1['ar'] == '2':
-					posCount2 += 1
-					self.pos2[posCount2] = {
-						'X': float(row1['X']),# * 10,
-						'Y': float(row1['Y']),# * 10,
-						'Z': float(row1['Z'])# * 10
-					}
-					if debug['csv']: print(self.pos2)
-
-				else:
-					pass
-
-				if debug['csv']: print(debug['gtext'] + f' {row1}')
-
-		if debug['csv']: print('\r')
-		return
 
 	def autoMove(self, loop=1):
 		zap_grip = [0, 0]  # zápästie a gripper "zatvorenosť"
@@ -295,7 +257,7 @@ class Axel:
 		# hľadá Arduína kým sú neni iniciované všetky
 		while not ((self.Aport and self.Bport) and self.joyPort):
 			# aktualizácia ports listu
-			for port in serial.tools.list_ports_windows.comports():
+			for port in serlist.comports():
 				ports.append(port)
 			if debug['ini']: print('\033[34m' + f'porty v ini = {ports}' + '\033[0m')
 			# debug stuuf (keď nenájde žiadne porty čo je divné)
@@ -306,7 +268,7 @@ class Axel:
 					# debuug
 					if debug['0']: print('\r\n' + str(i)), print(f'port: {p}')
 					try:
-						ser = serial.Serial(p, baud_rate, timeout=2)
+						ser = serial.Serial(port=p, baudrate=baud_rate, timeout=2)
 						# uistím sa že port je otvorený
 						if ser.isOpen():
 							ser.close()
@@ -318,7 +280,6 @@ class Axel:
 							# vypíšem debuuug že som našiel na "tomto" porte Angie
 							if debug['0'] and debug['ini']: print(debug['gtext'] + f'{p} port pre {Ax[1]} Arduino')
 
-							ser.close()
 							start = [300, 150, 0]
 							self.Angi = arduino.ruka(Ax, start, ser)
 							self.Aport = True
@@ -370,7 +331,7 @@ class Axel:
 
 class arduino():
 	class ruka():
-		def __init__(self, parametre, zaklad, serPort=serial.Serial()):
+		def __init__(self, parametre, zaklad, serPort=type(serial.Serial)):
 			self.serPort = serPort
 			self.serPort.open()
 			if self.serPort.isOpen():
@@ -622,20 +583,21 @@ if __name__ == "__main__":
 
 	zlom = 'ty máš Mac?? -.-'
 	try:  # note v Raspberry sa musí vymeniť "\" za "/"... nepítaj sa prečo iba to sprav
-		if sys.platform == 'win32':
+		if platform == 'win32':
 			zlom = '\\'
-			import serial.tools.list_ports_windows
-		elif sys.platform.startswith('linux'):
+			import serial.tools.list_ports_windows as serlist
+		elif platform.startswith('linux'):
 			zlom = '/'
-			import serial.tools.list_ports_linux
+			import serial.tools.list_ports_linux as serlist
 		else:
 			raise OSErr
 	except:
 		print(debug['Error'] + 'tento program nepodporuje iné systémi ako Windows a Linux' + debug['Error'])
 		print(zlom)
-		sys.exit(1)
+		#exit from sys lib
+		exit(1)
 
-	object = Axel('.' + zlom + 'positions.csv')
+	object = Axel('.' + zlom + 'positions.csv',)
 
 	# inicializácia Axel prostredia
 	object.ini()
