@@ -1,6 +1,6 @@
 from time import sleep
 from csv import DictReader
-from os import get_terminal_size
+from os import get_terminal_size, system
 
 
 def progress_bar(progress, total, err=None):
@@ -102,3 +102,5 @@ if __name__ == "__main__":
 			# ak chceš vypísať správne kde sa vyskitol error
 			progress_bar(i, len(numbers), 2)
 		progress_bar(i + 1, len(numbers))
+
+	#system('cls')
