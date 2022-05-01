@@ -1,0 +1,37 @@
+všetok aktuálny kód je na stránke https://github.com/okmas-32/Axel
+
+
+postup:
+
+	nainštalovanie:
+		pythonu 3.9.5:
+			https://itheo.tech/install-python-39-on-raspberry-pi
+
+		mounting USB:
+			https://raspberrytips.com/mount-usb-drive-raspberry-pi/
+
+		pip3.9:
+			popen
+			serial
+			pyserial (kvôli serial.tools.list_ports ale to nefungovalo na raspberry tak som nakoniec použil popen)
+
+-note: musel som spraviť work around lebo žiadna knižnica mi nevypíše výrobcu každého USB pripojeného zariadenia tak som spravil to že napíšem každému zariadeniu a to ktoré správne odpovie naspäť bude brané ako Arduino
+
+	wireless access point (wireless controll):
+		https://www.raspberryconnect.com/projects/65-raspberrypi-hotspot-accesspoints/158-raspberry-pi-auto-wifi-hotspot-switch-direct-connection
+		-ssid: AXEL_WiFi (2)
+		-pass: (take iste ako ssh heslo)
+
+	joistick (do budúcna):
+		https://iot-guider.com/raspberrypi/analog-joystick-module-in-raspberry-pi/attachment/interfacing-analog-joystick-module-in-raspberry-pi/
+
+impruve:
+	stránka
+	Bézier Curve (3 bodové krivky ktoré sa tiež používajú na zobrazovanie fondow)
+		-GIF		https://ambrosiogabe.github.io/assets/images/mathBehindFonts/bezierMath.gif
+		-stránka	https://ambrosiogabe.github.io/the-math-behind-font-rasterization/
+		-video		https://www.youtube.com/watch?v=LaYPoMPRSlk
+	tutorial na pomali vsetko co treba vylepsit:
+		-https://www.societyofrobots.com/robot_arm_tutorial.shtml
+
+	viem že je možné z Raspberry pi programovať Arduino neskôr sa na to pozriem

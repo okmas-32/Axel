@@ -1,11 +1,11 @@
 import subprocess
-import sys
+from sys import platform, exit
 import serial
-import serial.tools.list_ports  # python -m serial.tools.list_ports -v
-import time
-import locale
+from time import sleep, time
+from locale import getpreferredencoding
+import utils
 from math import sqrt, atan2, degrees
-from csv import DictReader
+# python -m serial.tools.list_ports -v
 
 baud_rate = 115200
 spacer = ","
@@ -40,7 +40,7 @@ class CustomError(Exception):
 
 	# teda ak je to error ktorý som schopný obýsť.. ak to je niečo fatálnejšie tak to crashne celé
 	def __init__(self, exception, i=None):
-		if i != None:
+		if i is not None:
 			# ak to je očakávaný error (bez veľkého červeného E na začiatku)
 			print('\r' + debug['space'] + str(exception))
 		else:
@@ -51,9 +51,9 @@ class CustomError(Exception):
 
 def tiME(func):
 	def MYtiME(*args, **kwargs):
-		t1 = time.time()
+		t1 = time()
 		nic = func(*args, **kwargs)
-		t2 = time.time()
+		t2 = time()
 		print('\033[33m' + f'Function {func.__name__!r} executed in {(t2 - t1):.4f}s' + '\033[0m' + '\r\n')
 		return nic
 
@@ -69,7 +69,7 @@ def wrapp(func):
 	return MYwrapp
 
 
-class Axel():
+class Axel:
 	def __init__(self, poss):
 		"""tu si iba určím aké parametre bude držať objekt v
         classe Axel ako napr. port v ktorom je Arduino alebo dĺžku ramena ruky"""
@@ -89,16 +89,15 @@ class Axel():
 		self.pos1 = {}
 		self.pos2 = {}
 
-		if __name__ == "__main__":  # prečíta automaticky csv len ak je spustený ako hlavný program
-			self.CSVr(poss)
+		utils.CSVr(poss, debug)
 
-			if debug['csv']:
-				print(debug['gtext'] + debug['text'] + f' CSV-saved↓ \r')
-				print(f'\t{self.pos1}')
-				print(f'\t{self.pos2}')
-				print(f'počet príkazov z CSV pre 1: {len(self.pos1)}')
-				print(f'počet príkazov z CSV pre 2: {len(self.pos2)}')
-				print('\r')
+		if debug['csv']:
+			print(debug['gtext'] + debug['text'] + f' CSV-saved↓ \r')
+			print(f'\t{self.pos1}')
+			print(f'\t{self.pos2}')
+			print(f'počet príkazov z CSV pre 1: {len(self.pos1)}')
+			print(f'počet príkazov z CSV pre 2: {len(self.pos2)}')
+			print('\r')
 
 		self.X = 300
 		self.Y = 250
@@ -139,7 +138,7 @@ class Axel():
 			Zi = 80
 
 		X = int(Xi)
-		Y = int(Yi) - (base)
+		Y = int(Yi) - base
 		Z = int(Zi)
 		# vypočítam si dĺžky na výpočet matematiky
 		dlzka1 = arm1
@@ -212,43 +211,6 @@ class Axel():
 		)
 		return alfa, beta, gama
 
-	def CSVr(self, csvfile):
-		"""Na čítanie z .csv filov"""
-
-		with open(csvfile, 'r') as csvf:
-			csv_diktionary = DictReader(csvf)
-
-			if debug['csv']: print(debug['gtext'] + debug['text'] + f' CSV↓ \r')
-
-			posCount1 = 0
-			posCount2 = 0
-			for row1 in csv_diktionary:
-				if debug['csv']: print(row1)
-				if row1['ar'] == '1':
-					posCount1 += 1
-					self.pos1[posCount1] = {
-						'X': float(row1['X']),# * 10,
-						'Y': float(row1['Y']),# * 10,
-						'Z': float(row1['Z'])# * 10
-					}
-					if debug['csv']: print(self.pos1)
-
-				if row1['ar'] == '2':
-					posCount2 += 1
-					self.pos2[posCount2] = {
-						'X': float(row1['X']),# * 10,
-						'Y': float(row1['Y']),# * 10,
-						'Z': float(row1['Z'])# * 10
-					}
-					if debug['csv']: print(self.pos2)
-
-				else:
-					pass
-
-				if debug['csv']: print(debug['gtext'] + f' {row1}')
-
-		if debug['csv']: print('\r')
-		return
 
 	def autoMove(self, loop=1):
 		zap_grip = [0, 0]  # zápästie a gripper "zatvorenosť"
@@ -295,7 +257,7 @@ class Axel():
 		# hľadá Arduína kým sú neni iniciované všetky
 		while not ((self.Aport and self.Bport) and self.joyPort):
 			# aktualizácia ports listu
-			for port, _, _ in sorted(serial.tools.list_ports.comports()):
+			for port, _, _ in serlist.comports():
 				ports.append(port)
 			if debug['ini']: print('\033[34m' + f'porty v ini = {ports}' + '\033[0m')
 			# debug stuuf (keď nenájde žiadne porty čo je divné)
@@ -306,19 +268,18 @@ class Axel():
 					# debuug
 					if debug['0']: print('\r\n' + str(i)), print(f'port: {p}')
 					try:
-						ser = serial.Serial(p, baud_rate, timeout=2)
+						ser = serial.Serial(port=p, baudrate=baud_rate, timeout=2)
 						# uistím sa že port je otvorený
 						if ser.isOpen():
 							ser.close()
 						ser.open()
-						x = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
+						x = ser.readline().decode(getpreferredencoding().rstrip()).rstrip()
 						Ax = x.split(',')
 						if debug['fromser']: print(f'z serioveho portu {Ax}')
 						if Ax[1] == 'Angie':  # ak poslalo Arduino v riadku druhé (za ",") angie tak :
 							# vypíšem debuuug že som našiel na "tomto" porte Angie
 							if debug['0'] and debug['ini']: print(debug['gtext'] + f'{p} port pre {Ax[1]} Arduino')
 
-							ser.close()
 							start = [300, 150, 0]
 							self.Angi = arduino.ruka(Ax, start, ser)
 							self.Aport = True
@@ -353,7 +314,7 @@ class Axel():
 				portsini = ports
 			ports.clear()
 
-			time.sleep(1)
+			sleep(1)
 
 		if ((self.Aport and self.Bport) and self.joyPort):
 			# aby som si bol istý že sú otvorené oba porty
@@ -370,7 +331,7 @@ class Axel():
 
 class arduino():
 	class ruka():
-		def __init__(self, parametre, zaklad, serPort=serial.Serial()):
+		def __init__(self, parametre, zaklad, serPort=type(serial.Serial)):
 			self.serPort = serPort
 			self.serPort.open()
 			if self.serPort.isOpen():
@@ -492,10 +453,10 @@ class arduino():
 				CustomError("zasielanie dát: neviem kde ale musíš zadať správne arduino na ktoré chceš poslať dáta")
 			if debug['zasielanie']: print(f'posielanie dat = {serdata}')
 			while not self.sendData:
-				self.serPort.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
-				time.sleep((milis - 200) / 1000)
+				self.serPort.write((serdata + '\r\n').encode(getpreferredencoding().rstrip()))
+				sleep((milis - 200) / 1000)
 				self.serPort.flush()
-				c = self.serPort.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
+				c = self.serPort.readline().decode(getpreferredencoding().rstrip()).rstrip()
 				if debug['auto-program']: print(f'pohyb dokončený z {self.name} Arduina?: {c}')
 				if c == '1':
 					self.sendData = True
@@ -512,7 +473,7 @@ class arduino():
 			if debug['0']: print('\x1b[1;30;41m' + f'zatvaram port {self.name} ' + '\x1b[0m')
 			if self.serPort.isOpen():
 				serdata = 'reset'
-				self.serPort.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
+				self.serPort.write((serdata + '\r\n').encode(getpreferredencoding().rstrip()))
 				self.serPort.close()
 			else:
 				CustomError(f'Port {self.serPort.name} už bol zatvorený')
@@ -563,13 +524,13 @@ class arduino():
 def manual():
 	try:
 		while True:
-			X = int(input('zadaj X: '))
-			Y = int(input('zadaj Y: '))
-			Z = int(input('zadaj Z: '))
 			print('\nzadaj číslo\n'
 			      '0 = Angie\n'
 			      '1 = Bimbis')
 			choose = input('vyber robota: ')
+			X = int(input('zadaj X: '))
+			Y = int(input('zadaj Y: '))
+			Z = int(input('zadaj Z: '))
 			uhol = [0]*3
 			if choose == '0':
 				print('pohyb Angi')
@@ -608,6 +569,9 @@ def manual():
 
 				object.Bimb.sendAxel(uhol, 2000)
 
+
+
+
 	except KeyboardInterrupt:
 		print("\nzadaný Ctrl+C interupt")
 		pass
@@ -619,64 +583,24 @@ if __name__ == "__main__":
 
 	zlom = 'ty máš Mac?? -.-'
 	try:  # note v Raspberry sa musí vymeniť "\" za "/"... nepítaj sa prečo iba to sprav
-		if sys.platform == 'win32':
+		if platform == 'win32':
 			zlom = '\\'
-		elif sys.platform.startswith('linux'):
+			import serial.tools.list_ports_windows as serlist
+		elif platform.startswith('linux'):
 			zlom = '/'
+			import serial.tools.list_ports_linux as serlist
 		else:
 			raise OSErr
-
-	except OSErr:
+	except:
 		print(debug['Error'] + 'tento program nepodporuje iné systémi ako Windows a Linux' + debug['Error'])
 		print(zlom)
-		sys.exit(1)
+		#exit from sys lib
+		exit(1)
 
-	object = Axel('.' + zlom + 'positions.csv')
+	object = Axel('.' + zlom + 'positions.csv',)
 
 	# inicializácia Axel prostredia
 	object.ini()
 
-	#object.autoMove(1)
-
+	#manuálne ovládanie
 	manual()
-
-
-	# try:
-	# 	pass
-	#
-	# except KeyboardInterrupt:  # očakáva Ctrl + C prerušenie programu
-	# 	if debug['0'] and debug['ini']:
-	# 		print('\r' + debug['text'])
-	# 		object.Angi.__exit__()
-	# 		object.Bimb.__exit__()
-	# 		object.Joy.__exit__()
-	# 		print(debug['space'] + f'Angie arduino je zatvorene: {not object.Angi.serPort.isOpen()}')
-	# 		print(debug['space'] + f'Bimb arduino je zatvorene: {not object.Bimb.serPort.isOpen()}')
-	# 		print(debug['space'] + f'joy arduino je zatvorene: {not object.Joy.serPort.isOpen()}')
-	#
-	# 	print(f'\nAxel bol zastavený s commandom Ctrl + C\n')
-	#
-	# 	sys.exit(1)
-	#
-	# except Exception as e:
-	# 	if debug['0'] and debug['ini']:
-	# 		print('\r' + debug['text'])
-	# 		print(debug['space'] + f'Angie arduino je zatvorene: {not object.Angi.serPort.isOpen()}')
-	# 		print(debug['space'] + f'Bimb arduino je zatvorene: {not object.Bimb.serPort.isOpen()}')
-	# 		print(debug['space'] + f'joy arduino je zatvorene: {not object.Joy.serPort.isOpen()}')
-	# 	raise CustomError(e)
-	# # print(f'\nExeption: ({e})')
-	#
-	# finally:  # "čisté" ukončenie programu
-	# 	if debug['0']:
-	# 		print('\r')
-	# 		print(debug['text'])
-	# 		print(debug['space'] + str(object.Angi.name))
-	# 		print(debug['space'] + str(object.Angi) + '\n')
-	#
-	# 		print(debug['space'] + str(object.Bimb.name))
-	# 		print(debug['space'] + str(object.Bimb) + '\n')
-	#
-	# 		print(debug['space'] + str(object.Joy.name))
-	# 		print(debug['space'] + str(object.Joy) + '\n')
-	# 	sys.exit(0)  # "čisté" ukončenie programu
