@@ -1,22 +1,30 @@
-import time
+from time import sleep
 from csv import DictReader
+from os import get_terminal_size
+
 
 def progress_bar(progress, total, err=None):
 	"""this programm is for general loading stuff.. it can show
 	the progress of loading for user"""
-	percent = 100 * ((progress) / float(total))
-	bar = '█' * int(percent) + '-' * (100 - int(percent))
 
-	print('\x1b[1;33;33m' + f"\r|{bar}| {percent:.2f}%" + '\x1b[0m', end="\r")
+	#vypočítavanie
+	ter_size = (get_terminal_size().columns - 10) / 100
+	percent = 100 * ((progress) / float(total))
+	bar = '█' * int(percent * ter_size) + '-' * (int(ter_size * 100) - int(percent * ter_size))
+
+	#clean up
+	printi = ' ' * int(len(bar) + 10)
+	print(printi, end='\r')
+
+	print('\x1b[1;33;33m' + f"|{bar}| {percent:.2f}%" + '\x1b[0m', end="\r")
 
 	if progress == total:
-		print('\33[92m' + f"\r|{bar}| {percent:.2f}%" + '\33[0m', end="\r")
+		print('\33[92m' + f"\r|{bar}| {percent:.2f}%" + '\33[0m', end="\n")
 
 	if err is not None:
-
 		#na konci je \n aby sa error správa správne vypísala do konzoly
 		print('\x1b[1;30;41m' + f"\r|{bar}| {percent:.2f}%" + '\x1b[0m', end="\n\a")
-		time.sleep(0.5)
+		sleep(0.5)
 		raise err
 
 def CSVr(csvfile, debug):
@@ -60,7 +68,6 @@ def CSVr(csvfile, debug):
 if __name__ == "__main__":
 
 	#test loading baru pre commandlinu
-	from .test import debug
 	CSVr('.\\positions.csv', {
 	'0':            bool(1),  # celkový debug
 	'csv':          bool(1),  # čítanie CSV súboru
@@ -83,14 +90,14 @@ if __name__ == "__main__":
 		#v appende je iba paiload
 		results.append(math.factorial(x))
 		progress_bar(i + 1, len(numbers))
-	time.sleep(0.5)
+	sleep(0.5)
 
 	numbers = [x * 5 for x in range(2000, 3000)]
 	results = []
 	progress_bar(0, len(numbers))
 	for i, x in enumerate(numbers):
 		results.append(math.factorial(x))
-		if i == 999:
+		if i == 99:
 			#ak chcem vzpísať error i musí byť bez +1
 			# ak chceš vypísať správne kde sa vyskitol error
 			progress_bar(i, len(numbers), 2)

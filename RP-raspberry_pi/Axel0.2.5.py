@@ -1,8 +1,8 @@
 import subprocess
 from sys import platform, exit
 import serial
-import time
-import locale
+from time import sleep, time
+from locale import getpreferredencoding
 import utils
 from math import sqrt, atan2, degrees
 # python -m serial.tools.list_ports -v
@@ -51,9 +51,9 @@ class CustomError(Exception):
 
 def tiME(func):
 	def MYtiME(*args, **kwargs):
-		t1 = time.time()
+		t1 = time()
 		nic = func(*args, **kwargs)
-		t2 = time.time()
+		t2 = time()
 		print('\033[33m' + f'Function {func.__name__!r} executed in {(t2 - t1):.4f}s' + '\033[0m' + '\r\n')
 		return nic
 
@@ -257,7 +257,7 @@ class Axel:
 		# hľadá Arduína kým sú neni iniciované všetky
 		while not ((self.Aport and self.Bport) and self.joyPort):
 			# aktualizácia ports listu
-			for port in serlist.comports():
+			for port, _, _ in serlist.comports():
 				ports.append(port)
 			if debug['ini']: print('\033[34m' + f'porty v ini = {ports}' + '\033[0m')
 			# debug stuuf (keď nenájde žiadne porty čo je divné)
@@ -273,7 +273,7 @@ class Axel:
 						if ser.isOpen():
 							ser.close()
 						ser.open()
-						x = ser.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
+						x = ser.readline().decode(getpreferredencoding().rstrip()).rstrip()
 						Ax = x.split(',')
 						if debug['fromser']: print(f'z serioveho portu {Ax}')
 						if Ax[1] == 'Angie':  # ak poslalo Arduino v riadku druhé (za ",") angie tak :
@@ -314,7 +314,7 @@ class Axel:
 				portsini = ports
 			ports.clear()
 
-			time.sleep(1)
+			sleep(1)
 
 		if ((self.Aport and self.Bport) and self.joyPort):
 			# aby som si bol istý že sú otvorené oba porty
@@ -453,10 +453,10 @@ class arduino():
 				CustomError("zasielanie dát: neviem kde ale musíš zadať správne arduino na ktoré chceš poslať dáta")
 			if debug['zasielanie']: print(f'posielanie dat = {serdata}')
 			while not self.sendData:
-				self.serPort.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
-				time.sleep((milis - 200) / 1000)
+				self.serPort.write((serdata + '\r\n').encode(getpreferredencoding().rstrip()))
+				sleep((milis - 200) / 1000)
 				self.serPort.flush()
-				c = self.serPort.readline().decode(locale.getpreferredencoding().rstrip()).rstrip()
+				c = self.serPort.readline().decode(getpreferredencoding().rstrip()).rstrip()
 				if debug['auto-program']: print(f'pohyb dokončený z {self.name} Arduina?: {c}')
 				if c == '1':
 					self.sendData = True
@@ -473,7 +473,7 @@ class arduino():
 			if debug['0']: print('\x1b[1;30;41m' + f'zatvaram port {self.name} ' + '\x1b[0m')
 			if self.serPort.isOpen():
 				serdata = 'reset'
-				self.serPort.write((serdata + '\r\n').encode(locale.getpreferredencoding().rstrip()))
+				self.serPort.write((serdata + '\r\n').encode(getpreferredencoding().rstrip()))
 				self.serPort.close()
 			else:
 				CustomError(f'Port {self.serPort.name} už bol zatvorený')
